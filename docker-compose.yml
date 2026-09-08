@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ecommerce-postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123456}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: ecommerce-rabbitmq
@@ -57,7 +74,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment: &db
       SERVER_PORT: 8081
-      DB_HOST: host.docker.internal
+      DB_HOST: postgres
       DB_PORT: ${DB_PORT:-5432}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-123456}
@@ -67,20 +84,28 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - eureka
+      eureka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   product:
     build: ./product-service
+    container_name: ecommerce-product
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
       SERVER_PORT: 8082
     ports: ["8082:8082"]
     depends_on:
-      - eureka
+      eureka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   cart:
     build: ./cart-service
+    container_name: ecommerce-cart
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
@@ -88,20 +113,28 @@ services:
       PRODUCT_SERVICE_URI: http://product:8082
     ports: ["8083:8083"]
     depends_on:
-      - eureka
+      eureka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   inventory:
     build: ./inventory-service
+    container_name: ecommerce-inventory
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
       SERVER_PORT: 8084
     ports: ["8084:8084"]
     depends_on:
-      - eureka
+      eureka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   order:
     build: ./order-service
+    container_name: ecommerce-order
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
@@ -119,19 +152,26 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   payment:
     build: ./payment-service
+    container_name: ecommerce-payment
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
       SERVER_PORT: 8086
     ports: ["8086:8086"]
     depends_on:
-      - eureka
+      eureka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   notification:
     build: ./notification-service
+    container_name: ecommerce-notification
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *db
@@ -145,10 +185,16 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
+    container_name: ecommerce-frontend
     ports:
       - "5173:80"
     depends_on:
       - gateway
+
+volumes:
+  postgres_data:

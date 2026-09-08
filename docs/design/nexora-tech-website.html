@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXORA TECH — Figma Website Export</title>
+<meta name="description" content="Interactive HTML prototype exported from the NEXORA TECH Figma website design.">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+:root {
+  --blue:#144fcc;--blue-2:#144fd1;--blue-soft:#e3edff;--ink:#0e121c;--muted:#616e85;
+  --line:#dbe3ed;--surface:#f8f9fb;--surface-2:#f6f8fa;--green:#0a7a4d;--green-soft:#dbf5e8;
+  --yellow-soft:#fcf0cc;--danger:#d13333;--danger-soft:#ffe3e3;--shadow:0 10px 30px rgba(14,18,28,.12);
+  --container:1312px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#fff}
+button,input,select,textarea{font:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+.view{display:none;min-height:100vh}
+.view.active{display:block}
+.header{height:80px;padding:0 64px;background:#fff;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+.header-left,.header-actions,.row{display:flex;align-items:center}
+.header-left{gap:28px}
+.brand{font-size:20px;font-weight:800;color:var(--blue);cursor:pointer;white-space:nowrap}
+.nav-link{font-size:14px;color:var(--muted);cursor:pointer}
+.nav-link:hover,.nav-link.active{color:var(--ink);font-weight:700}
+.header-search{width:360px;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:10px;padding:0 14px}
+.header-search input{border:0;outline:0;background:transparent;width:100%;color:var(--ink)}
+.header-actions{gap:22px}
+.action{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.action:hover{color:var(--blue)}
+.page{padding:32px 64px 56px}
+.container{width:min(var(--container),100%);margin:0 auto}
+.h1{font-size:36px;line-height:1.12;margin:0;font-weight:800}
+.h2{font-size:24px;line-height:1.2;margin:0;font-weight:800}
+.h3{font-size:20px;line-height:1.25;margin:0;font-weight:800}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.link{color:var(--blue);font-size:14px;font-weight:700;cursor:pointer}
+.btn{min-height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 18px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--blue-2);border-color:var(--blue-2);color:#fff}
+.btn.soft{background:var(--blue-soft);border-color:var(--blue-soft);color:var(--blue)}
+.btn.danger{color:var(--danger)}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px}
+.chip{display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-size:12px;font-weight:800}
+.chip.sale{background:var(--danger-soft);color:var(--danger)}
+.chip.green{background:var(--green-soft);color:var(--green)}
+.hero{height:326px;border-radius:24px;background:#060e1c;color:#fff;padding:34px 42px;display:flex;align-items:center;justify-content:space-between;overflow:hidden}
+.hero-copy{width:565px}
+.eyebrow{font-size:12px;color:#a6c7ff;font-weight:800}
+.hero h1{font-size:42px;line-height:1.05;margin:12px 0}
+.hero p{font-size:16px;line-height:1.5;color:#c2cfe0;max-width:520px}
+.hero-actions{display:flex;gap:12px;margin-top:18px}
+.hero-media{width:520px;height:258px;border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero-media img,.product-media img,.cart-img img,.pdp-main-img,.thumb img,.order-img img,.review-img img{width:100%;height:100%;object-fit:contain}
+.img-fallback{display:none;align-items:center;justify-content:center;text-align:center;font-weight:800;color:var(--muted);background:linear-gradient(135deg,#f8f9fb,#e3edff);width:100%;height:100%;padding:12px}
+.category-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.category{height:104px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2);padding:18px}
+.category strong{display:block;margin-bottom:7px}
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:32px 0}
+.trust{height:88px;background:var(--green-soft);border-radius:16px;padding:18px}
+.trust strong{display:block;color:#087a4a;font-size:14px;margin-bottom:5px}
+.product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.home-products{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+.product-card{min-width:0;cursor:pointer}
+.product-media{height:220px;border-radius:18px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.badges{display:flex;gap:8px;margin:10px 0}
+.product-card h3{font-size:17px;margin:0 0 6px}
+.price{font-size:19px;color:var(--blue);font-weight:800;margin:6px 0}
+.benefit{font-size:12px;color:var(--green);font-weight:700}
+.brands{height:78px;margin-top:28px;padding:0 20px;border-radius:16px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;color:var(--muted)}
+.listing-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+.toolbar{display:flex;align-items:center;gap:12px}
+.input-inline{height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px}
+.input-inline input{border:0;outline:0;min-width:320px}
+.listing-layout{display:grid;grid-template-columns:260px 1fr;gap:32px}
+.filters{height:820px;background:var(--surface);border-radius:18px;padding:18px}
+.filter-item{height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 14px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700}
+.pdp-layout{display:grid;grid-template-columns:620px 1fr;gap:48px}
+.pdp-main-img{width:620px;height:600px;border-radius:20px}
+.thumbs{display:flex;gap:12px;margin-top:16px}
+.thumb{width:96px;height:72px;border:1px solid var(--line);border-radius:10px;padding:4px}
+.thumb.active{border-color:var(--blue)}
+.pdp-title{font-size:38px;margin:14px 0 10px}
+.stock{height:52px;background:var(--green-soft);color:var(--green);border-radius:12px;display:flex;align-items:center;padding:0 16px;font-weight:700;font-size:14px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{margin-top:16px}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+.inputbox{height:48px;border:1px solid var(--line);border-radius:10px;padding:0 14px;display:flex;align-items:center}
+.variants{display:flex;gap:10px}
+.variant{height:42px;min-width:120px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:700}
+.variant.selected{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+.promo{margin-top:18px;background:var(--yellow-soft);border-radius:14px;padding:16px;line-height:1.45}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.specs{margin-top:28px;background:var(--surface);border-radius:18px;padding:24px}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.spec-row{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:10px 0}
+.cart-layout{display:grid;grid-template-columns:1fr 380px;gap:36px}
+.cart-list{display:flex;flex-direction:column;gap:16px}
+.cart-item{height:160px;display:grid;grid-template-columns:124px 1fr 140px;gap:18px;padding:18px}
+.cart-img{width:124px;height:124px}
+.qty{display:flex;gap:8px;margin-top:10px}
+.qty button,.qty span{width:36px;height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center}
+.summary{background:var(--surface);border-radius:18px;padding:24px;align-self:start}
+.summary-row{display:flex;justify-content:space-between;padding:12px 0;font-size:14px}
+.summary-row.total{font-size:20px;font-weight:800;border-top:1px solid var(--line);margin-top:8px;padding-top:18px}
+.checkout-layout{display:grid;grid-template-columns:820px 420px;gap:36px}
+.checkout-form{display:flex;flex-direction:column;gap:18px}
+.checkout-section{padding:20px}
+.checkout-section h3{margin-bottom:16px}
+.option{min-height:56px;border:1px solid var(--line);border-radius:12px;padding:0 16px;display:flex;align-items:center;gap:12px;margin-top:12px}
+.option.selected{border-color:var(--blue);background:var(--blue-soft)}
+.order-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
+.order-list{max-width:1045px;display:flex;flex-direction:column;gap:16px}
+.order-row{min-height:128px;padding:20px;display:flex;align-items:center;justify-content:space-between}
+.order-right{display:flex;align-items:center;gap:18px}
+.tracking-layout{display:grid;grid-template-columns:610px 1fr;gap:28px}
+.order-summary-box,.timeline-box{padding:22px}
+.order-item-mini{display:grid;grid-template-columns:92px 1fr;gap:16px;margin:16px 0}
+.order-img{width:92px;height:92px}
+.timeline-step{display:grid;grid-template-columns:16px 1fr;gap:14px;margin:18px 0}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--blue)}
+.dot.pending{background:#cbd5e1}
+.review-card{width:min(920px,100%);padding:24px}
+.review-product{display:grid;grid-template-columns:100px 1fr;gap:16px}
+.review-img{width:100px;height:100px}
+.stars{display:flex;gap:8px;margin:16px 0}
+.star{width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:24px;color:#f59e0b}
+textarea{width:100%;height:140px;border:1px solid var(--line);border-radius:10px;padding:14px;resize:vertical}
+.account-layout{display:grid;grid-template-columns:240px 1fr;gap:36px}
+.account-side{background:var(--surface);border-radius:18px;padding:16px;height:500px}
+.account-nav{height:44px;border-radius:10px;padding:0 12px;display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:8px}
+.account-nav.active{background:var(--blue-soft);color:var(--blue);font-weight:700}
+.profile-head{display:flex;align-items:center;gap:18px}
+.avatar{width:84px;height:84px;border-radius:50%;background:var(--blue-soft);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;margin-top:24px}
+.address{padding:18px;margin:18px 0}
+.auth{min-height:900px;display:grid;grid-template-columns:560px 1fr}
+.auth-hero{background:#07101e;color:#fff;padding:64px}
+.auth-hero.blue{background:var(--blue)}
+.auth-hero h1{font-size:44px;line-height:1.08;margin-top:140px;max-width:420px}
+.auth-formarea{display:flex;align-items:flex-start;padding:100px 120px}
+.auth-form{width:460px}
+.auth-form h1{font-size:40px;margin:0 0 12px}
+.auth-form .field{margin-top:20px}
+.auth-form input{width:100%;height:48px;border:1px solid var(--line);border-radius:10px;padding:0 14px}
+.admin-wrap{min-height:1020px;background:var(--surface);display:grid;grid-template-columns:240px 1fr}
+.admin-side{background:#fff;padding:28px 20px}
+.admin-brand{font-size:20px;color:var(--blue);font-weight:800}
+.admin-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.admin-nav{height:42px;border-radius:10px;padding:0 12px;display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px}
+.admin-nav.active{background:var(--blue-soft);color:var(--blue);font-weight:800}
+.admin-main{padding:34px 40px}
+.admin-topbar{display:flex;align-items:center;justify-content:space-between}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0}
+.metric{padding:18px}
+.metric .value{font-size:28px;font-weight:800;margin:8px 0}
+.admin-grid{display:grid;grid-template-columns:720px 380px;gap:18px}
+.chart{height:330px;padding:20px;display:flex;flex-direction:column}
+.bars{height:220px;display:flex;align-items:flex-end;gap:26px;padding:20px}
+.bar{width:38px;background:var(--blue);border-radius:8px 8px 0 0}
+.alerts{padding:20px}
+.alert{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eef2f7}
+.table{width:100%;border-collapse:collapse;margin-top:16px}
+.table th,.table td{padding:15px 10px;text-align:left;border-bottom:1px solid #eef2f7;font-size:13px}
+.table th{color:var(--muted);font-size:12px}
+.support-layout{display:grid;grid-template-columns:220px 350px 1fr;gap:16px;height:870px}
+.support-sidebar,.inbox,.conversation{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.support-sidebar{padding:18px 14px}
+.inbox-head{padding:18px;height:92px}
+.conversation-item{height:86px;padding:13px 18px}
+.conversation-item.active{background:var(--blue-soft)}
+.conversation-head{height:76px;padding:16px 22px}
+.messages{height:714px;padding:22px;background:var(--surface)}
+.message{max-width:480px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.message.agent{background:var(--blue);color:#fff;border-color:var(--blue)}
+.composer{height:80px;border-top:1px solid var(--line);display:flex;gap:10px;padding:14px 18px}
+.composer input{flex:1;border:0;background:var(--surface);border-radius:10px;padding:0 14px}
+.chat-launcher{position:fixed;right:24px;bottom:24px;width:56px;height:56px;border:0;border-radius:50%;background:var(--blue);color:#fff;box-shadow:var(--shadow);z-index:80;font-size:22px}
+.chat-panel{position:fixed;right:24px;bottom:92px;width:400px;height:680px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);z-index:90;overflow:hidden;display:none}
+.chat-panel.open{display:block}
+.chat-head{height:72px;background:var(--blue);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.chat-body{height:528px;background:var(--surface);padding:18px;overflow:auto}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}
+.quick{height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;font-size:12px;font-weight:700}
+.chat-composer{height:80px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:14px}
+.chat-composer input{flex:1;height:44px;border:0;background:var(--surface);border-radius:10px;padding:0 14px}
+.demo-nav{position:fixed;left:16px;bottom:16px;z-index:100;background:#07101e;color:#fff;border-radius:14px;box-shadow:var(--shadow);padding:8px;display:flex;gap:6px;align-items:center}
+.demo-nav select{background:#07101e;color:#fff;border:1px solid #334155;border-radius:8px;padding:8px}
+.demo-nav span{font-size:11px;color:#94a3b8}
+@media (max-width:1100px){
+  .header{padding:0 24px} .header-left .nav-link,.header-actions .action span{display:none} .header-search{width:300px}
+  .page{padding:24px} .hero{height:auto;gap:24px} .hero-media{width:42%}
+  .category-grid{grid-template-columns:repeat(3,1fr)} .trust-grid{grid-template-columns:repeat(2,1fr)}
+  .home-products,.product-grid{grid-template-columns:repeat(2,1fr)}
+  .listing-layout,.pdp-layout,.cart-layout,.checkout-layout,.tracking-layout,.account-layout,.admin-grid,.support-layout{grid-template-columns:1fr}
+  .filters{height:auto} .pdp-main-img{width:100%;height:420px} .auth{grid-template-columns:1fr} .auth-hero{display:none}
+  .auth-formarea{padding:48px 24px;justify-content:center} .admin-wrap{grid-template-columns:1fr} .admin-side{display:none}
+}
+@media (max-width:700px){
+  .header{height:auto;min-height:72px;gap:12px;flex-wrap:wrap;padding:14px 16px} .header-search{order:3;width:100%}
+  .header-actions{gap:14px} .page{padding:20px 16px 90px} .hero{padding:24px;flex-direction:column;align-items:flex-start}
+  .hero-copy,.hero-media{width:100%} .hero h1{font-size:32px} .category-grid{grid-template-columns:repeat(2,1fr)}
+  .trust-grid,.home-products,.product-grid,.two-col,.spec-grid,.form-grid,.metrics{grid-template-columns:1fr}
+  .listing-head{align-items:flex-start;gap:16px;flex-direction:column} .toolbar{width:100%;flex-wrap:wrap} .input-inline{width:100%}
+  .input-inline input{min-width:0;width:100%} .cart-item{height:auto;grid-template-columns:100px 1fr} .cart-item>.cart-actions{grid-column:2}
+  .brands{overflow:auto;gap:24px;justify-content:flex-start} .auth-form{width:100%} .demo-nav{left:8px;right:8px;bottom:8px}
+  .demo-nav select{width:100%} .demo-nav span{display:none} .chat-panel{left:12px;right:12px;width:auto;bottom:84px;height:70vh}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header class="header" id="customer-header">
+  <div class="header-left">
+    <div class="brand" onclick="go('home')">NEXORA TECH</div>
+    <div class="nav-link active" onclick="go('listing')">Laptop</div>
+    <div class="nav-link" onclick="go('listing')">Điện thoại</div>
+    <div class="nav-link" onclick="go('listing')">Audio</div>
+    <div class="nav-link" onclick="go('listing')">Gaming</div>
+  </div>
+  <div class="header-search"><i class="fa-solid fa-magnifying-glass"></i><input id="globalSearch" placeholder="Tìm sản phẩm, hãng, model…" onkeydown="if(event.key==='Enter')go('listing')"></div>
+  <div class="header-actions">
+    <div class="action"><i class="fa-solid fa-grip"></i><span>So sánh</span></div>
+    <div class="action"><i class="fa-solid fa-heart"></i><span>Yêu thích</span></div>
+    <div class="action" onclick="go('cart')"><i class="fa-solid fa-bag-shopping"></i><span>Giỏ hàng</span></div>
+    <div class="action" onclick="go('account')"><i class="fa-solid fa-user"></i><span>Tài khoản</span></div>
+  </div>
+</header>
+
+<main>
+
+<section class="view active" data-view="home">
+  <div class="page"><div class="container">
+    <div class="hero">
+      <div class="hero-copy"><div class="eyebrow">LAPTOP AI 2026</div>
+        <h1>Công nghệ mới.<br>Hiệu suất vượt trội.</h1>
+        <p>Khám phá laptop mỏng nhẹ, gaming và workstation với giao hàng nhanh và bảo hành rõ ràng.</p>
+        <div class="hero-actions"><button class="btn primary" onclick="go('listing')">Khám phá sản phẩm</button><button class="btn">Xem ưu đãi</button></div>
+      </div>
+      <div class="hero-media"><img src="https://www.figma.com/api/mcp/asset/e454db0c-3018-4c3b-ac74-97d906c14b5b" alt="Laptop AI" onerror="imgFail(this,'Laptop AI 2026')"><div class="img-fallback">Laptop AI 2026</div></div>
+    </div>
+
+    <div style="margin-top:32px">
+      <div class="section-head"><h2 class="h2">Danh mục nổi bật</h2><span class="link" onclick="go('listing')">Xem tất cả →</span></div>
+      <div class="category-grid">
+        <div class="category" onclick="go('listing')"><strong>Laptop</strong><span class="small muted">Mỏng nhẹ · Gaming</span></div>
+        <div class="category"><strong>Điện thoại</strong><span class="small muted">Android · iOS</span></div>
+        <div class="category"><strong>Audio</strong><span class="small muted">Tai nghe · Loa</span></div>
+        <div class="category"><strong>Gaming</strong><span class="small muted">Laptop · Gear</span></div>
+        <div class="category"><strong>Phụ kiện</strong><span class="small muted">Sạc · Hub · SSD</span></div>
+      </div>
+    </div>
+
+    <div class="trust-grid">
+      <div class="trust"><strong>Giao nhanh 2H</strong><span class="small muted">Áp dụng khu vực hỗ trợ</span></div>
+      <div class="trust"><strong>Hàng chính hãng</strong><span class="small muted">Nguồn hàng minh bạch</span></div>
+      <div class="trust"><strong>Bảo hành rõ ràng</strong><span class="small muted">Thông tin theo từng sản phẩm</span></div>
+      <div class="trust"><strong>Tư vấn trước mua</strong><span class="small muted">So sánh cấu hình dễ dàng</span></div>
+    </div>
+
+    <div>
+      <div class="section-head"><div><h2 class="h2">Sản phẩm nổi bật</h2><div class="small muted">Giá tốt · Trả góp 0% · Giao nhanh</div></div><span class="link" onclick="go('listing')">Xem toàn bộ →</span></div>
+      <div class="product-grid home-products" id="homeProducts"></div>
+    </div>
+    <div class="brands"><strong style="color:var(--ink)">Thương hiệu nổi bật</strong><span>APPLE</span><span>DELL</span><span>ASUS</span><span>LENOVO</span><span>HP</span><span>ACER</span></div>
+  </div></div>
+</section>
+
+<section class="view" data-view="listing">
+  <div class="page"><div class="container">
+    <div class="listing-head">
+      <div><h1 class="h1">Laptop</h1><div class="muted" style="margin-top:6px">312 sản phẩm · tìm kiếm, lọc và sắp xếp</div></div>
+      <div class="toolbar">
+        <div class="input-inline"><i class="fa-solid fa-magnifying-glass"></i><input id="listingSearch" placeholder="macbook, gaming, office…"></div>
+        <button class="btn primary" onclick="filterProducts()"><i class="fa-solid fa-magnifying-glass"></i>Tìm kiếm</button>
+        <select class="btn" id="sortProducts" onchange="renderListing()"><option>Bán chạy</option><option>Giá tăng dần</option><option>Giá giảm dần</option></select>
+      </div>
+    </div>
+    <div class="listing-layout">
+      <aside class="filters"><strong>Bộ lọc chuyên sâu</strong>
+        <div class="filter-item"><span>Hãng</span><span>⌄</span></div><div class="filter-item"><span>Nhu cầu</span><span>⌄</span></div><div class="filter-item"><span>Khoảng giá</span><span>⌄</span></div><div class="filter-item"><span>CPU</span><span>⌄</span></div><div class="filter-item"><span>RAM</span><span>⌄</span></div><div class="filter-item"><span>SSD</span><span>⌄</span></div><div class="filter-item"><span>GPU</span><span>⌄</span></div><div class="filter-item"><span>Kích thước màn hình</span><span>⌄</span></div><div class="filter-item"><span>Tình trạng</span><span>⌄</span></div><div class="filter-item"><span>Nguồn hàng</span><span>⌄</span></div>
+      </aside>
+      <div class="product-grid" id="listingProducts"></div>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="product">
+  <div class="page"><div class="container">
+    <div class="small muted" style="margin-bottom:20px">Laptop / Apple / MacBook Air M4</div>
+    <div class="pdp-layout">
+      <div>
+        <img class="pdp-main-img" id="pdpMain" src="https://www.figma.com/api/mcp/asset/8d2875f1-3fae-4bd4-a366-41c2911c2ba7" alt="MacBook Air M4">
+        <div class="thumbs">
+          <div class="thumb active"><img src="https://www.figma.com/api/mcp/asset/8d2875f1-3fae-4bd4-a366-41c2911c2ba7" onclick="pdpImage(this.src)"></div>
+          <div class="thumb"><img src="https://www.figma.com/api/mcp/asset/e454db0c-3018-4c3b-ac74-97d906c14b5b" onclick="pdpImage(this.src)"></div>
+          <div class="thumb"><img src="https://www.figma.com/api/mcp/asset/51e5d13a-9b2d-4756-8d0d-c4a6150bab61" onclick="pdpImage(this.src)"></div>
+          <div class="thumb"><img src="https://www.figma.com/api/mcp/asset/e94e82b2-5382-4fdc-80da-aeb47262f8ef" onclick="pdpImage(this.src)"></div>
+        </div>
+      </div>
+      <div>
+        <div class="row" style="gap:10px"><span class="chip">HÀNG CHÍNH HÃNG</span><span class="small muted">SKU: ELX-LAP-001</span></div>
+        <h1 class="pdp-title">Apple MacBook Air 13 M4</h1>
+        <div class="muted">★★★★★ &nbsp;4.9 · 328 đánh giá</div>
+        <div class="row" style="gap:14px;margin:14px 0"><div style="font-size:30px;color:var(--blue);font-weight:800">28.990.000 ₫</div><div class="muted"><s>30.990.000 ₫</s></div></div>
+        <div class="stock">Có hàng · Giao nhanh 2H tại Hà Nội & TP.HCM</div>
+        <div class="two-col">
+          <div class="field"><label>Loại hàng</label><div class="inputbox">Mới, Full box, Chính hãng</div></div>
+          <div class="field"><label>Bảo hành</label><div class="inputbox">24 tháng</div></div>
+        </div>
+        <h3 class="h3" style="margin-top:18px">Cấu hình</h3>
+        <div class="field"><label class="muted">RAM</label><div class="variants"><button class="variant selected">16GB</button><button class="variant">24GB</button></div></div>
+        <div class="field"><label class="muted">Storage</label><div class="variants"><button class="variant selected">512GB</button><button class="variant">1TB</button></div></div>
+        <div class="field"><label class="muted">Color</label><div class="variants"><button class="variant selected">Midnight</button><button class="variant">Starlight</button></div></div>
+        <div class="promo"><strong>Quà tặng & ưu đãi</strong><br>• Giảm 10% phụ kiện khi mua kèm<br>• Trả góp 0%<br>• Tặng voucher thiết lập máy<br>• Miễn phí giao nhanh nội thành</div>
+        <div class="cta"><button class="btn primary" onclick="go('checkout')"><i class="fa-solid fa-bag-shopping"></i>Mua ngay</button><button class="btn" onclick="go('cart')"><i class="fa-solid fa-bag-shopping"></i>Thêm vào giỏ</button></div>
+      </div>
+    </div>
+    <div class="specs"><h2 class="h2">Thông số kỹ thuật</h2><div class="spec-grid">
+      <div><div class="spec-row"><span class="muted small">Chip</span><strong>Apple M4 10-core</strong></div><div class="spec-row"><span class="muted small">RAM</span><strong>16GB unified</strong></div><div class="spec-row"><span class="muted small">SSD</span><strong>512GB</strong></div></div>
+      <div><div class="spec-row"><span class="muted small">Display</span><strong>13.6” Liquid Retina</strong></div><div class="spec-row"><span class="muted small">Battery</span><strong>Up to 18 hours</strong></div><div class="spec-row"><span class="muted small">Weight</span><strong>1.24 kg</strong></div></div>
+    </div></div>
+  </div></div>
+</section>
+
+<section class="view" data-view="cart">
+  <div class="page"><div class="container">
+    <h1 class="h1">Giỏ hàng</h1><p class="muted">2 sản phẩm trong giỏ hàng</p>
+    <div class="cart-layout">
+      <div class="cart-list">
+        <div class="card cart-item"><div class="cart-img"><img src="https://www.figma.com/api/mcp/asset/f0f895bd-f819-46bb-b374-1d9755a4a433" onerror="imgFail(this,'MacBook Air M4')"><div class="img-fallback">MacBook Air M4</div></div>
+          <div><h3 class="h3">MacBook Air M4</h3><div class="small muted">16GB / 512GB · Midnight</div><div class="price">28.990.000 ₫</div><div class="qty"><button onclick="qty(this,-1)">−</button><span>1</span><button onclick="qty(this,1)">+</button></div></div>
+          <div class="cart-actions" style="text-align:right"><button class="btn danger" onclick="this.closest('.cart-item').remove()">Xóa</button><div class="small" style="color:var(--green);margin-top:12px">Còn hàng</div></div>
+        </div>
+        <div class="card cart-item"><div class="cart-img"><img src="https://www.figma.com/api/mcp/asset/7132a1c8-69d9-4acc-b767-1f175e3eb856" onerror="imgFail(this,'Sony WH-1000XM6')"><div class="img-fallback">Sony WH-1000XM6</div></div>
+          <div><h3 class="h3">Sony WH-1000XM6</h3><div class="small muted">Black · Chính hãng</div><div class="price">8.990.000 ₫</div><div class="qty"><button onclick="qty(this,-1)">−</button><span>1</span><button onclick="qty(this,1)">+</button></div></div>
+          <div class="cart-actions" style="text-align:right"><button class="btn danger" onclick="this.closest('.cart-item').remove()">Xóa</button><div class="small" style="color:var(--green);margin-top:12px">Còn hàng</div></div>
+        </div>
+      </div>
+      <aside class="summary"><h2 class="h2">Tóm tắt đơn hàng</h2><div class="summary-row"><span>Tạm tính</span><strong>37.980.000 ₫</strong></div><div class="summary-row"><span>Khuyến mãi</span><strong>-1.000.000 ₫</strong></div><div class="summary-row"><span>Vận chuyển</span><strong style="color:var(--green)">Miễn phí</strong></div><div class="summary-row total"><span>Tổng cộng</span><span>36.980.000 ₫</span></div><button class="btn primary" style="width:100%;margin-top:12px" onclick="go('checkout')"><i class="fa-solid fa-credit-card"></i>Tiến hành đặt hàng</button><p class="small muted">Đã bao gồm VAT. Phí vận chuyển được xác nhận ở bước tiếp theo.</p></aside>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="checkout">
+  <div class="page"><div class="container"><h1 class="h1">Đặt hàng & Thanh toán</h1><p class="muted">Địa chỉ → Vận chuyển → Thanh toán</p>
+    <div class="checkout-layout">
+      <div class="checkout-form">
+        <div class="card checkout-section"><h3 class="h3">1. Địa chỉ giao hàng</h3><div class="two-col"><div class="field"><label>Người nhận</label><input class="inputbox" value="Nguyễn Văn A"></div><div class="field"><label>Số điện thoại</label><input class="inputbox" value="0901 234 567"></div></div><div class="field"><label>Địa chỉ</label><input class="inputbox" style="width:100%" value="12 Nguyễn Huệ, Quận 1, TP.HCM"></div></div>
+        <div class="card checkout-section"><h3 class="h3">2. Phương thức vận chuyển</h3><div class="option"><i class="fa-solid fa-truck-fast"></i><div><strong>Giao nhanh 2H</strong><div class="small muted">30.000 ₫ · giao trong nội thành</div></div></div><div class="option selected"><i class="fa-solid fa-box"></i><div><strong>Giao tiêu chuẩn</strong><div class="small muted">Miễn phí · 1–3 ngày</div></div></div></div>
+        <div class="card checkout-section"><h3 class="h3">3. Phương thức thanh toán</h3><div class="option selected"><strong>COD</strong><span class="small muted">Thanh toán khi nhận hàng</span></div><div class="option"><i class="fa-solid fa-credit-card"></i><strong>Thẻ Visa / Mastercard</strong><span class="small muted">Thanh toán giả lập</span></div></div>
+      </div>
+      <aside class="summary"><h2 class="h2">Đơn hàng của bạn</h2><div class="summary-row"><span>MacBook Air M4</span><strong>28.990.000 ₫</strong></div><div class="summary-row"><span>Sony WH-1000XM6</span><strong>8.990.000 ₫</strong></div><div class="summary-row"><span>Tạm tính</span><strong>37.980.000 ₫</strong></div><div class="summary-row"><span>Vận chuyển</span><strong style="color:var(--green)">Miễn phí</strong></div><div class="summary-row total"><span>Tổng thanh toán</span><span>36.980.000 ₫</span></div><button class="btn primary" style="width:100%" onclick="go('tracking')"><i class="fa-solid fa-circle-check"></i>Đặt hàng</button><p class="small muted">Khi đặt hàng, hệ thống tạo order qua order-service và xử lý phương thức thanh toán qua payment-service.</p></aside>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="orders">
+  <div class="page"><div class="container"><h1 class="h1">Lịch sử đơn hàng</h1><p class="muted">Theo dõi trạng thái và xem lại toàn bộ đơn đã đặt.</p>
+    <div class="order-tabs"><span class="chip">Tất cả</span><span class="chip">Chờ thanh toán</span><span class="chip">Đang xử lý</span><span class="chip">Đang giao</span><span class="chip">Đã giao</span><span class="chip">Đã hủy</span></div>
+    <div class="order-list">
+      <div class="card order-row"><div><h3>#NX25090701</h3><div class="small muted">05/09/2026 · 2 sản phẩm</div></div><div class="order-right"><span class="chip green">Đang giao</span><strong>36.980.000 ₫</strong><button class="btn" onclick="go('tracking')"><i class="fa-solid fa-truck-fast"></i>Theo dõi</button></div></div>
+      <div class="card order-row"><div><h3>#NX25090318</h3><div class="small muted">03/09/2026 · 2 sản phẩm</div></div><div class="order-right"><span class="chip">Đã giao</span><strong>8.990.000 ₫</strong><button class="btn" onclick="go('review')"><i class="fa-solid fa-box"></i>Đánh giá</button></div></div>
+      <div class="card order-row"><div><h3>#NX25082944</h3><div class="small muted">29/08/2026 · 2 sản phẩm</div></div><div class="order-right"><span class="chip sale">Đã hủy</span><strong>21.990.000 ₫</strong><button class="btn">Xem chi tiết</button></div></div>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="tracking">
+  <div class="page"><div class="container">
+    <div class="section-head"><div><h1 class="h1">Đơn hàng #NX25090701</h1><div class="muted">Đặt ngày 05/09/2026 · Thanh toán COD</div></div><span class="chip green">ĐANG GIAO</span></div>
+    <div class="tracking-layout">
+      <div class="card order-summary-box"><h2 class="h2">Sản phẩm</h2>
+        <div class="order-item-mini"><div class="order-img"><img src="https://www.figma.com/api/mcp/asset/f0f895bd-f819-46bb-b374-1d9755a4a433"></div><div><strong>MacBook Air M4</strong><div class="small muted">16GB / 512GB</div><div class="price">28.990.000 ₫</div></div></div>
+        <div class="order-item-mini"><div class="order-img"><img src="https://www.figma.com/api/mcp/asset/7132a1c8-69d9-4acc-b767-1f175e3eb856"></div><div><strong>Sony WH-1000XM6</strong><div class="small muted">Black</div><div class="price">8.990.000 ₫</div></div></div>
+        <div class="card" style="padding:14px;margin-top:16px"><div class="small muted">Giao đến</div><strong>Nguyễn Văn A · 0901 234 567</strong><div class="small muted">12 Nguyễn Huệ, Quận 1, TP.HCM</div></div>
+        <div class="summary-row total"><span>Tổng đơn</span><span>36.980.000 ₫</span></div>
+      </div>
+      <div class="card timeline-box"><h2 class="h2">Tiến trình giao hàng</h2>
+        <div class="timeline-step"><div class="dot "></div><div><strong>Đặt hàng</strong><div class="small muted">05/09 · 14:32</div></div></div><div class="timeline-step"><div class="dot "></div><div><strong>Đã xác nhận</strong><div class="small muted">05/09 · 15:10</div></div></div><div class="timeline-step"><div class="dot "></div><div><strong>Bàn giao vận chuyển</strong><div class="small muted">05/09 · 18:45</div></div></div><div class="timeline-step"><div class="dot "></div><div><strong>Đang giao</strong><div class="small muted">06/09 · 09:15</div></div></div><div class="timeline-step"><div class="dot pending"></div><div><strong>Đã giao</strong><div class="small muted">Dự kiến 06/09 · 16:00</div></div></div>
+        <div class="card" style="padding:14px;margin-top:14px"><div class="small">Đơn vị vận chuyển: VNPost</div><div class="small">Mã vận đơn: VNPOST-9088123</div></div><button class="btn" style="margin-top:18px" onclick="toggleChat()"><i class="fa-solid fa-user"></i>Liên hệ hỗ trợ</button>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="review">
+  <div class="page"><div class="container"><h1 class="h1">Đánh giá sản phẩm</h1><p class="muted">Chia sẻ trải nghiệm sau khi đơn hàng đã được giao.</p>
+    <div class="card review-card"><div class="review-product"><div class="review-img"><img src="https://www.figma.com/api/mcp/asset/8d2875f1-3fae-4bd4-a366-41c2911c2ba7"></div><div><h3 class="h3">MacBook Air M4</h3><div class="small muted">Đơn #NX25090318 · Đã mua hàng</div></div></div>
+      <div style="margin-top:18px;font-weight:700">Mức độ hài lòng</div><div class="stars"><button class="star" onclick="rate(this)">★</button><button class="star" onclick="rate(this)">★</button><button class="star" onclick="rate(this)">★</button><button class="star" onclick="rate(this)">★</button><button class="star" onclick="rate(this)">★</button></div>
+      <div class="field"><label>Tiêu đề</label><input class="inputbox" style="width:100%" value="Sản phẩm rất tốt"></div>
+      <div class="field"><label>Nội dung đánh giá</label><textarea placeholder="Chia sẻ cảm nhận về thiết kế, hiệu năng, giao hàng…"></textarea></div>
+      <div class="row" style="gap:12px;margin-top:18px"><button class="btn"><i class="fa-solid fa-plus"></i>Thêm ảnh</button><span class="small muted">Tối đa 5 ảnh · JPG/PNG</span></div><button class="btn primary" style="margin-top:18px" onclick="go('orders')"><i class="fa-solid fa-circle-check"></i>Gửi đánh giá</button>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="account">
+  <div class="page"><div class="container"><h1 class="h1">Tài khoản của tôi</h1><p class="muted">Quản lý hồ sơ, bảo mật và địa chỉ giao hàng.</p>
+    <div class="account-layout">
+      <aside class="account-side"><div class="account-nav active"><i class="fa-solid fa-user"></i>Hồ sơ cá nhân</div><div class="account-nav"><i class="fa-solid fa-location-dot"></i>Địa chỉ giao hàng</div><div class="account-nav"><i class="fa-solid fa-gear"></i>Đổi mật khẩu</div><div class="account-nav"><i class="fa-solid fa-bell"></i>Thông báo</div><div class="account-nav" onclick="go('login')"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</div></aside>
+      <div><div class="profile-head"><div class="avatar">NA</div><div><h2 class="h2">Nguyễn Văn A</h2><div class="muted">you@example.com · 0901 234 567</div></div></div>
+        <div class="form-grid"><div class="field"><label>Họ và tên</label><input class="inputbox" style="width:100%" value="Nguyễn Văn A"></div><div class="field"><label>Email</label><input class="inputbox" style="width:100%" value="you@example.com"></div><div class="field"><label>Số điện thoại</label><input class="inputbox" style="width:100%" value="0901 234 567"></div><div class="field"><label>Ngày sinh</label><input class="inputbox" style="width:100%" value="02/04/2003"></div></div>
+        <h2 class="h2" style="margin-top:28px">Địa chỉ mặc định</h2><div class="card address"><strong>Nhà riêng · Nguyễn Văn A</strong><div class="muted">12 Nguyễn Huệ, Quận 1, TP.HCM</div><div class="small muted">0901 234 567</div></div><button class="btn primary">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="view" data-view="login">
+  <div class="auth"><div class="auth-hero"><div class="brand" style="color:#a6c7ff">NEXORA TECH</div><h1>Đăng nhập để tiếp tục hành trình mua sắm công nghệ.</h1><p style="color:#c2cfe0">Theo dõi đơn hàng, lưu địa chỉ, đánh giá sản phẩm và nhận ưu đãi.</p></div><div class="auth-formarea"><div class="auth-form"><h1>Đăng nhập</h1><div class="muted">Sử dụng email và mật khẩu của bạn.</div><div class="field"><label>Email</label><input value="you@example.com"></div><div class="field"><label>Mật khẩu</label><input type="password" value="password"></div><button class="btn primary" style="width:100%;margin-top:20px" onclick="go('home')">Đăng nhập</button><div class="link" style="margin-top:18px">Quên mật khẩu?</div><div style="margin-top:24px">Chưa có tài khoản? <span class="link" onclick="go('register')">Đăng ký ngay</span></div></div></div></div>
+</section>
+
+<section class="view" data-view="register">
+  <div class="auth"><div class="auth-hero blue"><div style="font-size:20px;font-weight:800">NEXORA TECH</div><h1 style="margin-top:140px">Tạo tài khoản mới</h1><p>Một tài khoản duy nhất cho Website và Mobile App.</p></div><div class="auth-formarea" style="padding-top:64px"><div class="auth-form"><h1>Đăng ký</h1><div class="field"><label>Họ và tên</label><input placeholder="Nguyễn Văn A"></div><div class="field"><label>Email</label><input placeholder="you@example.com"></div><div class="field"><label>Số điện thoại</label><input placeholder="0901 234 567"></div><div class="field"><label>Mật khẩu</label><input placeholder="Tối thiểu 8 ký tự"></div><div class="field"><label>Xác nhận mật khẩu</label><input placeholder="Nhập lại mật khẩu"></div><button class="btn primary" style="width:100%;margin-top:20px" onclick="go('home')">Tạo tài khoản</button><div style="margin-top:18px">Đã có tài khoản? <span class="link" onclick="go('login')">Đăng nhập</span></div></div></div></div>
+</section>
+
+<section class="view" data-view="admin-dashboard"></section>
+<section class="view" data-view="admin-products"></section>
+<section class="view" data-view="admin-orders"></section>
+<section class="view" data-view="admin-order"></section>
+<section class="view" data-view="support-inbox"></section>
+
+</main>
+
+<button class="chat-launcher" id="chatLauncher" onclick="toggleChat()" aria-label="Mở chat hỗ trợ"><i class="fa-solid fa-comment"></i></button>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head"><div><strong>NEXORA Support</strong><div class="small">● Đang trực tuyến</div></div><button class="btn soft" style="min-height:36px;padding:0 12px" onclick="toggleChat()">×</button></div>
+  <div class="chat-body"><div class="message"><strong>Xin chào! Tôi có thể hỗ trợ gì cho bạn?</strong><div class="small muted">Chọn nhanh một nội dung hoặc nhập câu hỏi.</div></div><div class="small muted" style="font-weight:700">Hỗ trợ nhanh</div><div class="quick-grid"><button class="quick" onclick="go('product')">Tư vấn sản phẩm</button><button class="quick" onclick="go('tracking')">Tra cứu đơn hàng</button><button class="quick" onclick="go('checkout')">Thanh toán</button><button class="quick">Bảo hành / đổi trả</button></div><div class="message agent">Mình cần tư vấn laptop cho công việc văn phòng.</div><div class="message">MacBook Air M4 16GB là lựa chọn phù hợp nếu bạn ưu tiên nhẹ, pin tốt và làm việc văn phòng.</div><button class="btn soft" onclick="go('product')">Xem MacBook Air M4 →</button></div>
+  <div class="chat-composer"><button class="btn" style="padding:0 14px"><i class="fa-solid fa-paperclip"></i></button><input placeholder="Nhập tin nhắn..."><button class="btn primary" style="padding:0 14px"><i class="fa-solid fa-paper-plane"></i></button></div>
+</div>
+
+<div class="demo-nav"><span>Demo:</span><select id="demoSelect" onchange="go(this.value)">
+<option value="home">Home</option><option value="listing">Product Listing</option><option value="product">Product Detail</option><option value="cart">Cart</option><option value="checkout">Checkout</option><option value="orders">Order History</option><option value="tracking">Order Tracking</option><option value="review">Review</option><option value="account">Account</option><option value="login">Login</option><option value="register">Register</option><option value="admin-dashboard">Admin Dashboard</option><option value="admin-products">Admin Products</option><option value="admin-orders">Admin Orders</option><option value="admin-order">Admin Order Detail</option><option value="support-inbox">Support Inbox</option>
+</select></div>
+
+<script>
+const products=[
+{name:'MacBook Air M4',meta:'Apple · M4 · 16GB · 512GB',price:'28.990.000 ₫',img:'https://www.figma.com/api/mcp/asset/8d2875f1-3fae-4bd4-a366-41c2911c2ba7',sale:'-12%',stock:42},
+{name:'Dell XPS 14',meta:'Dell · Ultra 7 · 32GB',price:'39.990.000 ₫',img:'https://www.figma.com/api/mcp/asset/e454db0c-3018-4c3b-ac74-97d906c14b5b',sale:'',stock:18},
+{name:'ASUS Zenbook 14',meta:'ASUS · Ryzen 7 · 16GB',price:'24.990.000 ₫',img:'https://www.figma.com/api/mcp/asset/51e5d13a-9b2d-4756-8d0d-c4a6150bab61',sale:'-15%',stock:27},
+{name:'Lenovo Legion 5',meta:'Lenovo · RTX 5070 · 32GB',price:'32.990.000 ₫',img:'https://www.figma.com/api/mcp/asset/fc3f6baf-6fc5-4790-88f6-078b6d1d9467',sale:'',stock:12},
+{name:'HP Spectre x360',meta:'HP · Ultra 7 · OLED',price:'35.490.000 ₫',img:'https://www.figma.com/api/mcp/asset/e94e82b2-5382-4fdc-80da-aeb47262f8ef',sale:'-7%',stock:10},
+{name:'Acer Swift Go',meta:'Acer · Ultra 5 · 16GB',price:'21.990.000 ₫',img:'https://www.figma.com/api/mcp/asset/9dafee7c-e2cf-40aa-aeb0-70d7f90afe72',sale:'',stock:16}
+];
+function productCard(p){
+  return `<div class="product-card" onclick="go('product')"><div class="product-media"><img src="${p.img}" alt="${p.name}" onerror="imgFail(this,'${p.name}')"><div class="img-fallback">${p.name}</div></div><div class="badges"><span class="chip">CHÍNH HÃNG</span>${p.sale?`<span class="chip sale">${p.sale}</span>`:''}</div><h3>${p.name}</h3><div class="small muted">${p.meta}</div><div class="price">${p.price}</div><div class="benefit">Trả góp 0% · Giao nhanh 2H · So sánh</div></div>`;
+}
+function renderHome(){document.getElementById('homeProducts').innerHTML=products.slice(0,4).map(productCard).join('')}
+function renderListing(){
+  let arr=[...products],s=document.getElementById('sortProducts')?.value;
+  const n=x=>Number(x.price.replace(/\D/g,''));
+  if(s==='Giá tăng dần')arr.sort((a,b)=>n(a)-n(b)); if(s==='Giá giảm dần')arr.sort((a,b)=>n(b)-n(a));
+  const q=(document.getElementById('listingSearch')?.value||'').toLowerCase(); if(q)arr=arr.filter(p=>(p.name+' '+p.meta).toLowerCase().includes(q));
+  document.getElementById('listingProducts').innerHTML=arr.map(productCard).join('');
+}
+function filterProducts(){renderListing()}
+function imgFail(img,name){img.style.display='none';const f=img.nextElementSibling;if(f){f.textContent=name;f.style.display='flex'}}
+function qty(btn,d){const span=btn.parentElement.querySelector('span');span.textContent=Math.max(1,Number(span.textContent)+d)}
+function pdpImage(src){document.getElementById('pdpMain').src=src}
+function rate(btn){[...btn.parentElement.children].forEach((b,i)=>b.style.background=i<=[...btn.parentElement.children].indexOf(btn)?'#fcf0cc':'#fff')}
+function toggleChat(){document.getElementById('chatPanel').classList.toggle('open')}
+function showCustomerHeader(show){document.getElementById('customer-header').style.display=show?'flex':'none';document.getElementById('chatLauncher').style.display=show?'block':'none'}
+function adminShell(title,body,active='dashboard'){
+ const nav=[['dashboard','Dashboard','fa-grip'],['products','Products','fa-box'],['categories','Categories','fa-tag'],['inventory','Inventory','fa-box'],['orders','Orders','fa-bag-shopping'],['users','Users','fa-user'],['notifications','Notifications','fa-bell']];
+ return `<div class="admin-wrap"><aside class="admin-side"><div class="admin-brand">NEXORA ADMIN</div><div class="admin-sub">Operations Console</div>${nav.map(n=>`<div class="admin-nav ${active===n[0]?'active':''}" onclick="${n[0]==='dashboard'?"go('admin-dashboard')":n[0]==='products'?"go('admin-products')":n[0]==='orders'?"go('admin-orders')":''}"><i class="fa-solid ${n[2]}"></i>${n[1]}</div>`).join('')}</aside><div class="admin-main"><div class="admin-topbar"><h1 class="h1">${title}</h1><button class="btn" onclick="go('support-inbox')">Support Inbox →</button></div>${body}</div></div>`;
+}
+function buildAdmin(){
+ const bars=[90,120,150,110,173,160,173];
+ document.querySelector('[data-view="admin-dashboard"]').innerHTML=adminShell('Dashboard',`<div class="metrics"><div class="card metric"><div class="small muted">Doanh thu hôm nay</div><div class="value">128.400.000 ₫</div><div class="small" style="color:var(--green)">+12.8% so với hôm qua</div></div><div class="card metric"><div class="small muted">Đơn mới</div><div class="value">42</div><div class="small muted">+8 đơn trong 2 giờ</div></div><div class="card metric"><div class="small muted">Sắp hết hàng</div><div class="value">6</div><div class="small muted">Cần xử lý hôm nay</div></div><div class="card metric"><div class="small muted">Người dùng</div><div class="value">1.248</div><div class="small muted">+32 tuần này</div></div></div><div class="admin-grid"><div class="card chart"><h3 class="h3">Doanh thu 7 ngày</h3><div class="bars">${bars.map((h,i)=>`<div style="text-align:center"><div class="bar" style="height:${h}px"></div><div class="small muted">${['T2','T3','T4','T5','T6','T7','CN'][i]}</div></div>`).join('')}</div></div><div class="card alerts"><h3 class="h3">Cảnh báo tồn kho</h3>${[['Sony XM6','Còn 6'],['ROG Ally X','Hết hàng'],['SSD 1TB','Còn 3'],['Keychron K2','Còn 5']].map(a=>`<div class="alert"><span>${a[0]}</span><strong>${a[1]}</strong></div>`).join('')}<button class="btn" style="margin-top:14px">Mở Inventory</button></div></div><h3 class="h3" style="margin-top:24px">Đơn hàng gần đây</h3>${orderTable(3)}`,'dashboard');
+ document.querySelector('[data-view="admin-products"]').innerHTML=adminShell('Quản lý sản phẩm',`<div class="toolbar" style="margin:24px 0"><div class="input-inline"><input placeholder="SKU / tên sản phẩm"></div><button class="btn">Danh mục: Tất cả</button><button class="btn">Trạng thái: Tất cả</button><button class="btn primary">Lọc</button></div><table class="table"><thead><tr><th>Sản phẩm</th><th>Category</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>${products.slice(0,5).map((p,i)=>`<tr><td>${p.name}</td><td>${i===1?'Audio':'Laptop'}</td><td>${p.price}</td><td>${p.stock}</td><td>${p.stock<7?'Low stock':'Active'}</td><td>Sửa · Xóa</td></tr>`).join('')}</tbody></table>`,'products');
+ document.querySelector('[data-view="admin-orders"]').innerHTML=adminShell('Quản lý đơn hàng',`<div class="toolbar" style="margin:24px 0"><div class="input-inline"><input placeholder="Mã đơn / khách hàng"></div><button class="btn">Trạng thái: Tất cả</button><button class="btn">Thanh toán: Tất cả</button><button class="btn primary">Lọc</button></div>${orderTable(5)}`,'orders');
+ document.querySelector('[data-view="admin-order"]').innerHTML=adminShell('Đơn hàng #NX25090701',`<p class="muted">05/09/2026 · Nguyễn Văn A</p><div class="metrics" style="grid-template-columns:repeat(3,1fr)"><div class="card metric"><strong>Khách hàng</strong><p>Nguyễn Văn A<br>you@example.com<br>0901 234 567</p></div><div class="card metric"><strong>Giao hàng</strong><p>12 Nguyễn Huệ, Q1, TP.HCM<br>Giao nhanh 2H<br>VNPost</p></div><div class="card metric"><strong>Thanh toán</strong><p>COD<br>COD pending<br>36.980.000 ₫</p></div></div><div class="admin-grid"><div class="card" style="padding:20px"><h3 class="h3">Sản phẩm trong đơn</h3><table class="table"><tr><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr><tr><td>MacBook Air M4</td><td>1</td><td>28.990.000 ₫</td><td>28.990.000 ₫</td></tr><tr><td>Sony WH-1000XM6</td><td>1</td><td>8.990.000 ₫</td><td>8.990.000 ₫</td></tr></table></div><div class="card" style="padding:20px"><h3 class="h3">Fulfillment timeline</h3>${['Đã tạo đơn','Đã xác nhận','Đang xử lý','Đã bàn giao vận chuyển','Đang giao'].map(x=>`<div class="timeline-step"><div class="dot"></div><strong>${x}</strong></div>`).join('')}<button class="btn primary">Đánh dấu đã giao</button></div></div>`,'orders');
+ document.querySelector('[data-view="support-inbox"]').innerHTML=`<div style="background:var(--surface);min-height:1020px;padding:32px"><div class="admin-topbar"><div class="admin-brand">NEXORA Admin</div><div><strong>Support Inbox</strong> &nbsp; <span class="muted">Admin</span></div></div><div class="support-layout" style="margin-top:32px"><aside class="support-sidebar"><div class="small muted" style="font-weight:800">QUẢN TRỊ</div><div class="account-nav" onclick="go('admin-dashboard')">Dashboard</div><div class="account-nav">Sản phẩm</div><div class="account-nav">Đơn hàng</div><div class="account-nav">Khách hàng</div><div class="account-nav active">Hỗ trợ chat</div></aside><div class="inbox"><div class="inbox-head"><h3 class="h3">Hội thoại</h3><div class="input-inline" style="height:38px;margin-top:8px"><input placeholder="Tìm khách hàng / mã đơn..."></div></div>${[['Nguyễn Văn A','MacBook Air M4 · 2 phút'],['Trần Minh Khoa','Đơn #NX-20481 · 8 phút'],['Lê Hoàng','Chính sách bảo hành · 21 phút'],['Phạm Ngọc Anh','Thanh toán COD · 35 phút']].map((c,i)=>`<div class="conversation-item ${i===0?'active':''}"><strong>${c[0]}</strong><div class="small muted">${c[1]}</div></div>`).join('')}</div><div class="conversation"><div class="conversation-head"><strong>Nguyễn Văn A</strong><div class="small" style="color:var(--green)">● Online · USER · #NX-20481</div></div><div class="messages"><div class="message">Mình cần tư vấn MacBook cho công việc văn phòng.</div><div class="message agent">MacBook Air M4 16GB phù hợp với nhu cầu này. Máy nhẹ, pin tốt và hiệu năng ổn định.<div class="small">13:08 · Đã xem</div></div><div class="message"><strong>Đơn hàng liên quan · #NX-20481</strong><div class="small muted">Apple MacBook Air 13 M4 · Đang giao</div></div></div><div class="composer"><input placeholder="Nhập phản hồi..."><button class="btn primary"><i class="fa-solid fa-paper-plane"></i></button></div></div></div></div>`;
+}
+function orderTable(limit=5){const rows=[['#NX25090701','Nguyễn Văn A','05/09/2026','COD pending','Đang giao','36.980.000 ₫'],['#NX25090700','Trần Minh K','05/09/2026','Paid','Đang xử lý','24.990.000 ₫'],['#NX25090698','Lê Hoàng','05/09/2026','Pending','Chờ thanh toán','8.990.000 ₫'],['#NX25090681','Phạm An','04/09/2026','Paid','Đã giao','19.990.000 ₫'],['#NX25090640','Mai Linh','04/09/2026','Refunded','Đã hủy','21.990.000 ₫']].slice(0,limit);return `<table class="table"><thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt</th><th>Thanh toán</th><th>Trạng thái</th><th>Tổng tiền</th></tr></thead><tbody>${rows.map(r=>`<tr onclick="go('admin-order')" style="cursor:pointer">${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function go(name){
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); const v=document.querySelector(`[data-view="${name}"]`); if(v)v.classList.add('active');
+ document.getElementById('demoSelect').value=name; const admin=name.startsWith('admin')||name==='support-inbox'; showCustomerHeader(!admin && !['login','register'].includes(name));
+ window.scrollTo(0,0); history.replaceState(null,'','#'+name);
+}
+renderHome();renderListing();buildAdmin();
+const start=location.hash.replace('#',''); if(start)go(start);
+</script>
+</div>
+</body>
+</html>
