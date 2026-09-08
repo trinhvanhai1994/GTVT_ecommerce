@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant ORD as ORDER-SERVICE
+  participant MQ as RabbitMQ
+  participant NOTI as NOTIFICATION-SERVICE
+  participant DB as notification_db
+
+  ORD->>MQ: Publish event
+  MQ->>NOTI: Deliver message
+  NOTI->>NOTI: Map event type
+  NOTI->>DB: Insert notification
+  NOTI->>NOTI: Console log / mock email
+  Note over ORD,NOTI: Consumer failure is logged only. Order transaction already committed.

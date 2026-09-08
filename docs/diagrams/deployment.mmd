@@ -1,0 +1,42 @@
+flowchart TB
+  subgraph Host["Docker Compose host"]
+    FE[frontend :5173/:80]
+    GW[gateway :8080]
+    EU[eureka-server :8761]
+    AUTH[auth-service :8081]
+    PROD[product-service :8082]
+    CART[cart-service :8083]
+    INV[inventory-service :8084]
+    ORD[order-service :8085]
+    PAY[payment-service :8086]
+    NOTI[notification-service :8087]
+    PG[(PostgreSQL 17 :5432<br/>logical DBs)]
+    MQ[[RabbitMQ :5672 / :15672]]
+  end
+
+  Browser((Browser)) --> FE
+  Browser --> GW
+  FE --> GW
+  GW --> AUTH
+  GW --> PROD
+  GW --> CART
+  GW --> INV
+  GW --> ORD
+  GW --> PAY
+  AUTH --> PG
+  PROD --> PG
+  CART --> PG
+  INV --> PG
+  ORD --> PG
+  PAY --> PG
+  NOTI --> PG
+  ORD --> MQ
+  NOTI --> MQ
+  EU --- AUTH
+  EU --- PROD
+  EU --- CART
+  EU --- INV
+  EU --- ORD
+  EU --- PAY
+  EU --- NOTI
+  EU --- GW

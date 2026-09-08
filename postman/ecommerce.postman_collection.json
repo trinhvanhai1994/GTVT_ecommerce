@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "GTVT E-Commerce",
+    "description": "Requests go through API Gateway http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "productId", "value": "1" },
+    { "key": "cartItemId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "paymentId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Register", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Password123\",\n  \"fullName\": \"New User\"\n}" }, "url": "{{baseUrl}}/api/auth/register" } },
+        { "name": "Login customer", "event": [{ "listen": "test", "script": { "exec": ["var j=pm.response.json(); if(j.data&&j.data.accessToken) pm.collectionVariables.set('token', j.data.accessToken);"] } }], "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Password123\"\n}" }, "url": "{{baseUrl}}/api/auth/login" } },
+        { "name": "Login admin", "event": [{ "listen": "test", "script": { "exec": ["var j=pm.response.json(); if(j.data&&j.data.accessToken) pm.collectionVariables.set('adminToken', j.data.accessToken);"] } }], "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password123\"\n}" }, "url": "{{baseUrl}}/api/auth/login" } },
+        { "name": "Profile", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/auth/profile" } }
+      ]
+    },
+    {
+      "name": "Product",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/api/products?page=0&size=10" } },
+        { "name": "Search", "request": { "method": "GET", "url": "{{baseUrl}}/api/products?keyword=phone" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/api/products/{{productId}}" } },
+        { "name": "Create admin", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Demo Phone\",\n  \"description\": \"demo\",\n  \"price\": 199,\n  \"categoryId\": 1,\n  \"brand\": \"Acme\",\n  \"status\": \"ACTIVE\"\n}" }, "url": "{{baseUrl}}/api/products" } }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        { "name": "Get cart", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/cart" } },
+        { "name": "Add item", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"productId\": 1,\n  \"quantity\": 1\n}" }, "url": "{{baseUrl}}/api/cart/items" } },
+        { "name": "Update item", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"quantity\": 2\n}" }, "url": "{{baseUrl}}/api/cart/items/{{cartItemId}}" } },
+        { "name": "Clear cart", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/cart" } }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        { "name": "List admin", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/inventory" } },
+        { "name": "Set stock", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"availableQuantity\": 50\n}" }, "url": "{{baseUrl}}/api/inventory/{{productId}}" } }
+      ]
+    },
+    {
+      "name": "Order",
+      "item": [
+        { "name": "Checkout success", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"shippingName\": \"A\",\n  \"shippingPhone\": \"090\",\n  \"shippingAddress\": \"HN\",\n  \"paymentMethod\": \"MOCK_CARD\",\n  \"simulatePaymentFailure\": false\n}" }, "url": "{{baseUrl}}/api/orders" } },
+        { "name": "Checkout payment fail", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"shippingName\": \"A\",\n  \"shippingPhone\": \"090\",\n  \"shippingAddress\": \"HN\",\n  \"paymentMethod\": \"MOCK_CARD\",\n  \"simulatePaymentFailure\": true\n}" }, "url": "{{baseUrl}}/api/orders" } },
+        { "name": "My orders", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/orders" } },
+        { "name": "Cancel", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel" } }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        { "name": "Get payment", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/payments/{{paymentId}}" } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "Users", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/admin/users" } },
+        { "name": "Orders", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/admin/orders" } },
+        { "name": "Patch order status", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"SHIPPING\"\n}" }, "url": "{{baseUrl}}/api/admin/orders/{{orderId}}/status" } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+erDiagram
+  %% auth_db — isolated
+  users {
+    BIGINT id PK
+    VARCHAR email UK
+    VARCHAR password_hash
+    VARCHAR full_name
+    VARCHAR role
+    VARCHAR status
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+
+  %% product_db — isolated
+  categories {
+    BIGINT id PK
+    VARCHAR name UK
+    VARCHAR description
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  products {
+    BIGINT id PK
+    VARCHAR name
+    TEXT description
+    DECIMAL price
+    BIGINT category_id FK
+    VARCHAR brand
+    VARCHAR image_url
+    VARCHAR status
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  categories ||--o{ products : contains
+
+  %% cart_db — isolated
+  carts {
+    BIGINT id PK
+    BIGINT user_id UK
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  cart_items {
+    BIGINT id PK
+    BIGINT cart_id FK
+    BIGINT product_id
+    INT quantity
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  carts ||--o{ cart_items : has
+
+  %% inventory_db — isolated
+  inventories {
+    BIGINT id PK
+    BIGINT product_id UK
+    INT available_quantity
+    INT reserved_quantity
+    TIMESTAMP updated_at
+  }
+
+  %% order_db — isolated
+  orders {
+    BIGINT id PK
+    BIGINT user_id
+    VARCHAR status
+    DECIMAL total_amount
+    VARCHAR shipping_name
+    VARCHAR shipping_phone
+    VARCHAR shipping_address
+    VARCHAR payment_method
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  order_items {
+    BIGINT id PK
+    BIGINT order_id FK
+    BIGINT product_id
+    VARCHAR product_name
+    INT quantity
+    DECIMAL unit_price
+    DECIMAL subtotal
+  }
+  orders ||--o{ order_items : contains
+
+  %% payment_db — isolated
+  payments {
+    BIGINT id PK
+    BIGINT order_id
+    BIGINT user_id
+    DECIMAL amount
+    VARCHAR method
+    VARCHAR status
+    VARCHAR failure_reason
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+
+  %% notification_db — isolated
+  notifications {
+    BIGINT id PK
+    VARCHAR event_type
+    BIGINT user_id
+    VARCHAR reference_id
+    VARCHAR title
+    VARCHAR message
+    VARCHAR channel
+    VARCHAR status
+    TIMESTAMP created_at
+  }

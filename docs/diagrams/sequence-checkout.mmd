@@ -1,0 +1,37 @@
+sequenceDiagram
+  actor Customer
+  participant FE as Frontend
+  participant GW as API Gateway
+  participant ORD as ORDER-SERVICE
+  participant CART as CART-SERVICE
+  participant INV as INVENTORY-SERVICE
+  participant PAY as PAYMENT-SERVICE
+  participant MQ as RabbitMQ
+
+  Customer->>FE: Checkout
+  FE->>GW: POST /api/orders
+  GW->>ORD: Create order
+  ORD->>CART: Get cart by userId
+  CART-->>ORD: Cart items
+  ORD->>ORD: Persist order PENDING + snapshots
+  ORD->>INV: POST /internal/inventory/check
+  INV-->>ORD: Enough stock
+  ORD->>INV: POST /internal/inventory/reserve
+  INV-->>ORD: Reserved
+  ORD->>ORD: Status PAYMENT_PENDING
+  ORD->>MQ: ORDER_CREATED
+  ORD->>PAY: POST /api/payments
+  alt SUCCESS
+    PAY-->>ORD: SUCCESS
+    ORD->>INV: deduct
+    ORD->>ORD: CONFIRMED
+    ORD->>CART: Clear cart
+    ORD->>MQ: PAYMENT_SUCCESS, ORDER_CONFIRMED
+    ORD-->>FE: Confirmed order
+  else FAILED
+    PAY-->>ORD: FAILED
+    ORD->>INV: release
+    ORD->>ORD: PAYMENT_FAILED
+    ORD->>MQ: PAYMENT_FAILED
+    ORD-->>FE: Payment failed
+  end

@@ -1,0 +1,46 @@
+# Environment and secrets
+.env
+*.pem
+*.p12
+*.jks
+
+# Maven
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend-bicycle/node_modules/
+frontend-bicycle/dist/
+frontend-bicycle/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build
+*.class
+*.jar
+!**/src/main/resources/**/*.jar

@@ -1,0 +1,61 @@
+flowchart TB
+  subgraph Client
+    FE[React Frontend]
+  end
+
+  subgraph Edge
+    GW[API Gateway]
+    EU[Eureka Server]
+  end
+
+  subgraph Services
+    AUTH[AUTH-SERVICE]
+    PROD[PRODUCT-SERVICE]
+    CART[CART-SERVICE]
+    INV[INVENTORY-SERVICE]
+    ORD[ORDER-SERVICE]
+    PAY[PAYMENT-SERVICE]
+    NOTI[NOTIFICATION-SERVICE]
+  end
+
+  subgraph Data
+    ADB[(auth_db)]
+    PDB[(product_db)]
+    CDB[(cart_db)]
+    IDB[(inventory_db)]
+    ODB[(order_db)]
+    PAYDB[(payment_db)]
+    NDB[(notification_db)]
+    MQ[[RabbitMQ]]
+  end
+
+  FE --> GW
+  GW --> AUTH
+  GW --> PROD
+  GW --> CART
+  GW --> INV
+  GW --> ORD
+  GW --> PAY
+
+  AUTH -.-> EU
+  PROD -.-> EU
+  CART -.-> EU
+  INV -.-> EU
+  ORD -.-> EU
+  PAY -.-> EU
+  NOTI -.-> EU
+  GW -.-> EU
+
+  AUTH --> ADB
+  PROD --> PDB
+  CART --> CDB
+  INV --> IDB
+  ORD --> ODB
+  PAY --> PAYDB
+  NOTI --> NDB
+
+  ORD -->|REST check/reserve/release/deduct| INV
+  ORD -->|REST charge| PAY
+  CART -.->|REST validate product| PROD
+  ORD -->|Publish events| MQ
+  MQ --> NOTI

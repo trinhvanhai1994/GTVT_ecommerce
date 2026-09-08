@@ -1,0 +1,17 @@
+sequenceDiagram
+  actor Customer
+  participant FE as Frontend
+  participant GW as API Gateway
+  participant AUTH as AUTH-SERVICE
+  participant DB as auth_db
+
+  Customer->>FE: Submit email + password
+  FE->>GW: POST /api/auth/login
+  GW->>AUTH: Forward
+  AUTH->>DB: Find user by email
+  DB-->>AUTH: User + password_hash
+  AUTH->>AUTH: BCrypt matches
+  AUTH->>AUTH: Issue JWT (sub, role, exp)
+  AUTH-->>GW: 200 + token + profile
+  GW-->>FE: ApiResponse
+  FE-->>Customer: Store JWT, enter app

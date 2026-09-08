@@ -1,0 +1,275 @@
+import platform from "../assets/hero.png";
+
+export const art = { platform };
+
+const pngs = import.meta.glob("../assets/products/*.png", { eager: true, import: "default" });
+const png = (id) => pngs[`../assets/products/${id}.png`];
+
+/** Catalog crawled from dailyxedien.vn (Bluera Việt Nhật) — giá niêm yết công khai, mô tả tóm tắt. */
+export const bikes = [
+  {
+    id: "bluera-bl8",
+    name: "Xe đạp điện Bluera BL8",
+    brand: "Bluera",
+    tag: "Flagship",
+    price: 14000000,
+    priceOld: 15500000,
+    range: 60,
+    speed: 50,
+    battery: "Pin 60V–20Ah / Ắc quy 48V–20Ah",
+    weight: "40 kg",
+    motor: "500W",
+    load: "180 kg",
+    size: "1640 × 630 × 1020 mm",
+    colors: ["Đỏ", "Hồng", "Đen nhám", "Tím Titan", "Xanh đá", "Xanh xám"],
+    image: png("bluera-bl8"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-bl8/",
+    blurb:
+      "Xe đạp điện Bluera BL8s: đèn pha LED khối, phanh đĩa trước + tang trống sau, LCD, khóa NFC, 3 chế độ Eco/Normal/Sport. Pin 60V-20Ah sạc 6–8 giờ, tầm ~50–60 km, lốp 2.75-10 / 3.00-10, tải 180 kg."
+  },
+  {
+    id: "bluera-bl8-new",
+    name: "Xe đạp điện Bluera BL8 new",
+    brand: "Bluera",
+    tag: "Flagship",
+    price: 14000000,
+    priceOld: 15500000,
+    range: 70,
+    speed: 60,
+    battery: "60V–20Ah",
+    weight: "40 kg",
+    motor: "500W",
+    load: "180 kg",
+    colors: ["Đỏ", "Đen nhám", "Xanh"],
+    image: png("bluera-bl8-new"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-tro-luc-dien-bl8-new/",
+    blurb: "Bản BL8 new, motor 500W, tầm 50–70 km, tốc độ công bố tới 60 km/h. Giá đã gồm VAT."
+  },
+  {
+    id: "bluera-s6",
+    name: "Xe đạp điện Bluera S6",
+    brand: "Bluera",
+    tag: "City",
+    price: 13500000,
+    priceOld: 14500000,
+    range: 50,
+    speed: 50,
+    battery: "Ắc quy 48V–20Ah",
+    weight: "~40 kg",
+    motor: "500W",
+    colors: ["Đỏ", "Đen", "Xanh"],
+    image: png("bluera-s6"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-s6/",
+    blurb: "Dáng liền khối, ắc quy 48V-20Ah, tầm 40–50 km, 3 chế độ ga, đèn LED và phanh đĩa."
+  },
+  {
+    id: "bluera-s6-plus",
+    name: "Xe đạp điện Bluera S6 Plus",
+    brand: "Bluera",
+    tag: "City",
+    price: 13500000,
+    priceOld: 15000000,
+    range: 70,
+    speed: 50,
+    battery: "48V / 60V 20Ah",
+    motor: "500W",
+    colors: ["Đỏ", "Đen", "Xám"],
+    image: png("bluera-s6-plus"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-s6-plus/",
+    blurb: "Bản Plus của S6, motor 500W, tầm công bố 50–70 km."
+  },
+  {
+    id: "cap-super-max-2025",
+    name: "Xe đạp điện Bluera Cap Super Max 2025",
+    brand: "Bluera",
+    tag: "City",
+    price: 12000000,
+    priceOld: 13500000,
+    range: 50,
+    speed: 45,
+    battery: "48V–12Ah",
+    motor: "350W",
+    colors: ["Đen", "Đỏ", "Trắng"],
+    image: png("cap-super-max-2025"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-cap-super-max-2025/",
+    blurb: "Dáng Gen Z, ắc quy ẩn thân xe, sàn chân rộng, có bàn đạp trợ lực khi hết pin."
+  },
+  {
+    id: "swan-ai-2026",
+    name: "Xe đạp điện Swan AI 2026",
+    brand: "Bluera",
+    tag: "AI",
+    price: 11800000,
+    priceOld: 13500000,
+    range: 55,
+    speed: 45,
+    battery: "48V–20Ah",
+    motor: "450–500W",
+    colors: ["Trắng", "Xanh", "Đen"],
+    image: png("swan-ai-2026"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-swan-ai-2026/",
+    blurb: "Dòng Swan bản AI 2026, giá từ 11.8 triệu (tùy pin)."
+  },
+  {
+    id: "camelo-i8-ai-2026",
+    name: "Xe đạp điện Camelo I8 AI 2026",
+    brand: "Bluera",
+    tag: "AI",
+    price: 11800000,
+    priceOld: 13800000,
+    range: 55,
+    speed: 45,
+    battery: "48V–20Ah",
+    motor: "450W",
+    colors: ["Hồng", "Trắng", "Đen"],
+    image: png("camelo-i8-ai-2026"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-camelo-ai-i8-2026/",
+    blurb: "Camelo I8 bản AI 2026, dáng nhỏ gọn hướng khách nữ, giá 11.8–12.5 triệu."
+  },
+  {
+    id: "bee-u-ai",
+    name: "Xe đạp điện Bee U AI",
+    brand: "Bluera",
+    tag: "AI",
+    price: 11800000,
+    priceOld: 13500000,
+    range: 50,
+    speed: 45,
+    battery: "48V–20Ah",
+    motor: "450W",
+    colors: ["Vàng", "Đen", "Trắng"],
+    image: png("bee-u-ai"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bee-u-ai/",
+    blurb: "Xe điện mini đô thị, gọn, công nghệ AI trên dòng Bluera Việt Nhật."
+  },
+  {
+    id: "133-ip6-x24s",
+    name: "Xe đạp điện Bluera 133 IP6 X24s",
+    brand: "Bluera",
+    tag: "Sport",
+    price: 12500000,
+    priceOld: 13900000,
+    range: 55,
+    speed: 50,
+    battery: "48V–20Ah",
+    motor: "500W",
+    colors: ["Đỏ", "Đen", "Xanh"],
+    image: png("133-ip6-x24s"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-133-ip6-x24s/",
+    blurb: "Dòng 133 IP6 X24s, motor 500W, tầm 50–60 km, bản Hot Sale."
+  },
+  {
+    id: "133-ip6-pro-s",
+    name: "Xe đạp điện Bluera 133 IP6 Pro S",
+    brand: "Bluera",
+    tag: "Sport",
+    price: 12500000,
+    priceOld: 13400000,
+    range: 55,
+    speed: 50,
+    battery: "48V–20Ah",
+    motor: "500W",
+    colors: ["Đen", "Đỏ"],
+    image: png("133-ip6-pro-s"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-133-ip6-pro-s/",
+    blurb: "133 IP6 Pro S — bản thể thao, 500W, tầm 50–60 km."
+  },
+  {
+    id: "minion-s",
+    name: "Xe đạp điện Bluera Minion s",
+    brand: "Bluera",
+    tag: "Mini",
+    price: 12500000,
+    priceOld: 13500000,
+    range: 50,
+    speed: 50,
+    battery: "48V–20Ah",
+    motor: "500W IP67",
+    colors: ["Xanh", "Đen", "Đỏ", "Trắng", "Be"],
+    image: png("minion-s"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-minion-s/",
+    blurb: "Hai yên, dáng sport, motor bánh sau 500W chuẩn IP67, tầm 40–60 km."
+  },
+  {
+    id: "mini-kute-s",
+    name: "Xe đạp điện Bluera Mini Kute s",
+    brand: "Bluera",
+    tag: "Mini",
+    price: 9500000,
+    priceOld: 12000000,
+    range: 45,
+    speed: 40,
+    battery: "48V–12/20Ah",
+    motor: "350–500W",
+    colors: ["Xanh", "Hồng", "Trắng"],
+    image: png("mini-kute-s"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-mini-kute-s/",
+    blurb: "Bản Mini Kute s, nhỏ gọn học sinh, đang giảm mạnh so với giá niêm yết."
+  },
+  {
+    id: "camelo-i8",
+    name: "Xe đạp điện Bluera Camelo i8",
+    brand: "Bluera",
+    tag: "Mini",
+    price: 11500000,
+    priceOld: 12000000,
+    range: 50,
+    speed: 45,
+    battery: "48V–20Ah",
+    motor: "450W",
+    colors: ["Hồng", "Trắng", "Đen"],
+    image: png("camelo-i8"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-camelo-i8/",
+    blurb: "Camelo i8 gọn, nhiều màu, hướng khách nữ — tầm ~50 km/lần sạc."
+  },
+  {
+    id: "mini-kute",
+    name: "Xe đạp điện Bluera Mini Kute",
+    brand: "Bluera",
+    tag: "Mini",
+    price: 9000000,
+    priceOld: 11000000,
+    range: 40,
+    speed: 40,
+    battery: "48V–12Ah",
+    motor: "350W",
+    colors: ["Hồng", "Xanh", "Trắng"],
+    image: png("mini-kute"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-mini-kute/",
+    blurb: "Mini Kute giá vào cửa ~9 triệu, phù hợp đi học gần."
+  },
+  {
+    id: "swan-i6",
+    name: "Xe đạp điện Bluera Swan i6",
+    brand: "Bluera",
+    tag: "City",
+    price: 9500000,
+    priceOld: 11500000,
+    range: 45,
+    speed: 50,
+    battery: "48V–20Ah",
+    motor: "500W",
+    colors: ["Xám", "Đen", "Trắng"],
+    image: png("swan-i6"),
+    source: "https://dailyxedien.vn/san-pham/xe-dap-dien-bluera-swan-i6/",
+    blurb: "Swan i6 motor 500W, tầm 40–50 km, khoảng giá 9.5–11.5 triệu tùy phiên bản."
+  }
+];
+
+export const storeInfo = {
+  company: "Công ty TNHH Xe Điện Bluera Việt Nhật",
+  tax: "0312473259",
+  address: "466 Nguyễn Duy Trinh, P. Bình Trưng, TP. Hồ Chí Minh",
+  hotline: "0933 505 222",
+  phone: "028 2253 0524",
+  email: "dailyxedien.com.vn@gmail.com",
+  site: "https://dailyxedien.vn/"
+};
+
+export function money(v) {
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(v);
+}
+
+export function getBike(id) {
+  return bikes.find((b) => b.id === id);
+}

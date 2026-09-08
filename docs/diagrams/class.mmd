@@ -1,0 +1,28 @@
+flowchart LR
+  subgraph Auth
+    U[User]
+  end
+  subgraph Product
+    C[Category]
+    P[Product]
+  end
+  subgraph CartBC
+    Cart[Cart]
+    CI[CartItem]
+  end
+  subgraph Inv
+    I[Inventory]
+  end
+  subgraph Ord
+    O[Order]
+    OI[OrderItem]
+  end
+  subgraph Pay
+    PayE[Payment]
+  end
+  subgraph Noti
+    N[Notification]
+  end
+  C --> P
+  Cart --> CI
+  O --> OI

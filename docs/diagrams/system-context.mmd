@@ -1,0 +1,12 @@
+flowchart LR
+  Customer((Customer))
+  Admin((Admin))
+  System[E-Commerce Microservices System]
+  PayMock[(Mock Payment Processor)]
+  Mail[Mock Email / Console Log]
+
+  Customer -->|Browse, cart, checkout, orders| System
+  Admin -->|Manage catalog, inventory, orders, users| System
+  System -->|Charge request| PayMock
+  PayMock -->|SUCCESS / FAILED| System
+  System -->|Notification event| Mail

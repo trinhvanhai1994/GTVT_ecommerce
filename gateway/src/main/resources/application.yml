@@ -1,0 +1,99 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: GATEWAY
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URI:http://localhost:8088}
+        instance:
+          service-base-url: http://127.0.0.1:${server.port:8080}
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**,/api/admin/users/**
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/products/**
+        - id: cart-service
+          uri: ${CART_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/cart/**
+        - id: inventory-service
+          uri: ${INVENTORY_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/inventory/**
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/orders/**,/api/admin/orders/**
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URI:http://localhost:8086}
+          predicates:
+            - Path=/api/payments/**
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/notifications/**
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    healthcheck:
+      enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    health-check-url-path: /actuator/health
+    status-page-url-path: /actuator/info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,logfile,loggers,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    health: /actuator/health
+    logfile: /actuator/logfile
+
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{svc:-}] [%X{cid:-}] %msg%n"
+    file: "%d{HH:mm:ss.SSS} %-5level [%X{svc:-}] [%X{cid:-}] %msg%n"
+  level:
+    root: INFO
+    org.springframework: WARN
+    org.springframework.cloud.gateway: WARN

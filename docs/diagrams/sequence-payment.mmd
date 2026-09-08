@@ -1,0 +1,15 @@
+sequenceDiagram
+  participant ORD as ORDER-SERVICE
+  participant PAY as PAYMENT-SERVICE
+  participant DB as payment_db
+
+  ORD->>PAY: Charge orderId, amount, method
+  PAY->>DB: Insert payment PENDING
+  PAY->>PAY: Mock processor SUCCESS or FAILED
+  alt SUCCESS
+    PAY->>DB: status SUCCESS
+    PAY-->>ORD: PaymentResponse SUCCESS
+  else FAILED
+    PAY->>DB: status FAILED + reason
+    PAY-->>ORD: PaymentResponse FAILED
+  end

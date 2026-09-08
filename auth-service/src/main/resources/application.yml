@@ -1,0 +1,91 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: AUTH-SERVICE
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/auth_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:ecommerce}
+    password: ${RABBITMQ_PASSWORD:ecommerce}
+
+jwt:
+  secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-256-bits}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    healthcheck:
+      enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    health-check-url-path: /actuator/health
+    status-page-url-path: /actuator/info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,logfile,loggers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    health: /actuator/health
+    logfile: /actuator/logfile
+
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{svc:-}] [%X{cid:-}] %msg%n"
+    file: "%d{HH:mm:ss.SSS} %-5level [%X{svc:-}] [%X{cid:-}] %msg%n"
+  level:
+    root: INFO
+    org.springframework: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: OFF
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+clients:
+  product:
+    url: ${PRODUCT_SERVICE_URI:http://localhost:8082}
+  cart:
+    url: ${CART_SERVICE_URI:http://localhost:8083}
+  inventory:
+    url: ${INVENTORY_SERVICE_URI:http://localhost:8084}
+  payment:
+    url: ${PAYMENT_SERVICE_URI:http://localhost:8086}
