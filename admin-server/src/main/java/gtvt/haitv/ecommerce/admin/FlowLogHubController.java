@@ -7,29 +7,24 @@ import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class FlowLogHubController {
 
-    private static final List<Svc> SVCS = List.of(
-            new Svc("GATEWAY", "http://localhost:8080"),
-            new Svc("AUTH-SERVICE", "http://localhost:8081"),
-            new Svc("PRODUCT-SERVICE", "http://localhost:8082"),
-            new Svc("CART-SERVICE", "http://localhost:8083"),
-            new Svc("INVENTORY-SERVICE", "http://localhost:8084"),
-            new Svc("ORDER-SERVICE", "http://localhost:8085"),
-            new Svc("PAYMENT-SERVICE", "http://localhost:8086"),
-            new Svc("NOTIFICATION-SERVICE", "http://localhost:8087")
-    );
-
+    private final Map<String, String> services;
     private final RestClient http = RestClient.create();
+
+    public FlowLogHubController(FlowLogProperties properties) {
+        this.services = properties.getServices();
+    }
 
     @GetMapping(value = "/flow", produces = MediaType.TEXT_HTML_VALUE)
     public String flowPage() {
         StringBuilder body = new StringBuilder();
-        for (Svc s : SVCS) {
-            body.append("<section><h2>").append(s.name()).append("</h2><pre>");
-            body.append(escape(tail(s.url()))).append("</pre></section>");
+        for (Map.Entry<String, String> e : services.entrySet()) {
+            body.append("<section><h2>").append(e.getKey()).append("</h2><pre>");
+            body.append(escape(tail(e.getValue()))).append("</pre></section>");
         }
         return """
                 <!doctype html>
@@ -76,8 +71,5 @@ public class FlowLogHubController {
 
     private static String escape(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private record Svc(String name, String url) {
     }
 }

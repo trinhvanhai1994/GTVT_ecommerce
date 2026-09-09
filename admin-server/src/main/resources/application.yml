@@ -31,3 +31,15 @@ info:
   app:
     name: ${spring.application.name}
     health: /actuator/health
+
+# Hub /flow scrapes actuator logfile. Docker Compose overrides FLOW_*_URI to service DNS.
+flow:
+  services:
+    GATEWAY: ${FLOW_GATEWAY_URI:http://localhost:8080}
+    "AUTH-SERVICE": ${FLOW_AUTH_URI:http://localhost:8081}
+    "PRODUCT-SERVICE": ${FLOW_PRODUCT_URI:http://localhost:8082}
+    "CART-SERVICE": ${FLOW_CART_URI:http://localhost:8083}
+    "INVENTORY-SERVICE": ${FLOW_INVENTORY_URI:http://localhost:8084}
+    "ORDER-SERVICE": ${FLOW_ORDER_URI:http://localhost:8085}
+    "PAYMENT-SERVICE": ${FLOW_PAYMENT_URI:http://localhost:8086}
+    "NOTIFICATION-SERVICE": ${FLOW_NOTIFICATION_URI:http://localhost:8087}

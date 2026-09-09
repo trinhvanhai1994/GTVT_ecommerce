@@ -29,7 +29,6 @@ public class FlowHttpFilter extends OncePerRequestFilter {
         return p.startsWith("/actuator")
                 || p.startsWith("/v3/api-docs")
                 || p.startsWith("/swagger")
-                || p.equals("/info")
                 || p.equals("/error");
     }
 

@@ -22,10 +22,6 @@ public class NotificationController {
 
     @GetMapping
     public ApiResponse<List<Notification>> mine() {
-        Long userId = SecurityUtils.currentUserId();
-        if (SecurityUtils.isAdmin()) {
-            return ApiResponse.ok(notificationService.forUser(userId));
-        }
-        return ApiResponse.ok(notificationService.forUser(userId));
+        return ApiResponse.ok(notificationService.forUser(SecurityUtils.currentUserId()));
     }
 }

@@ -10,12 +10,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
-  rabbitmq:
-    listener:
-      simple:
-        auto-startup: false
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
 eureka:
   client:
     enabled: false
