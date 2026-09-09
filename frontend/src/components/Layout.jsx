@@ -38,6 +38,7 @@ export default function Layout() {
         <header className="header" id="customer-header">
           <div className="header-left">
             <Link to="/" className="brand">
+              <span className="brand-mark"><i className="fa-solid fa-microchip"></i></span>
               <span>NEXORA TECH</span>
             </Link>
 
@@ -225,8 +226,8 @@ export default function Layout() {
                     <i className="fa-solid fa-phone" style={{ marginRight: "8px", color: "#60a5fa" }}></i>
                     1800 6868
                   </span>
-                  <span>Tư vấn mua hàng: 8:00 – 21:30</span>
-                  <span>Khiếu nại & Bảo hành: 8:30 – 18:00</span>
+                  <span>Tư vấn mua hàng: 8:00 - 21:30</span>
+                  <span>Khiếu nại & Bảo hành: 8:30 - 18:00</span>
                   <span>Email: support@nexoratech.vn</span>
                 </div>
               </div>

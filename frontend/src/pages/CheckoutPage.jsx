@@ -146,7 +146,7 @@ export default function CheckoutPage() {
                 <i className="fa-solid fa-box fa-lg"></i>
                 <div style={{ flex: 1 }}>
                   <strong>Giao hàng tiêu chuẩn VNPost</strong>
-                  <div className="small muted">Miễn phí · Thời gian dự kiến từ 1 – 3 ngày</div>
+                  <div className="small muted">Miễn phí · Thời gian dự kiến từ 1 - 3 ngày</div>
                 </div>
               </div>
             </div>

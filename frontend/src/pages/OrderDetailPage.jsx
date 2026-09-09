@@ -191,7 +191,7 @@ export default function OrderDetailPage() {
               <div className="dot"></div>
               <div>
                 <strong>Đặt hàng thành công</strong>
-                <div className="small muted">05/09/2026 · 14:32 — Đơn hàng đã ghi nhận vào hệ thống</div>
+                <div className="small muted">05/09/2026 · 14:32 - Đơn hàng đã ghi nhận vào hệ thống</div>
               </div>
             </div>
 
@@ -199,7 +199,7 @@ export default function OrderDetailPage() {
               <div className="dot"></div>
               <div>
                 <strong>Đã xác nhận & Giữ tồn kho</strong>
-                <div className="small muted">05/09/2026 · 15:10 — Nhân viên hoàn tất đóng gói bảo bọc</div>
+                <div className="small muted">05/09/2026 · 15:10 - Nhân viên hoàn tất đóng gói bảo bọc</div>
               </div>
             </div>
 
@@ -207,7 +207,7 @@ export default function OrderDetailPage() {
               <div className="dot"></div>
               <div>
                 <strong>Bàn giao đối tác vận chuyển</strong>
-                <div className="small muted">05/09/2026 · 18:45 — Bưu cục VNPost đã xuất kho</div>
+                <div className="small muted">05/09/2026 · 18:45 - Bưu cục VNPost đã xuất kho</div>
               </div>
             </div>
 
@@ -215,7 +215,7 @@ export default function OrderDetailPage() {
               <div className="dot" style={order.status === "DELIVERED" ? {} : { boxShadow: "0 0 0 6px rgba(20, 79, 204, 0.25)" }}></div>
               <div>
                 <strong style={{ color: "var(--blue)" }}>Đang trên đường giao hàng</strong>
-                <div className="small muted">06/09/2026 · 09:15 — Shipper đang liên hệ giao hàng</div>
+                <div className="small muted">06/09/2026 · 09:15 - Shipper đang liên hệ giao hàng</div>
               </div>
             </div>
 
