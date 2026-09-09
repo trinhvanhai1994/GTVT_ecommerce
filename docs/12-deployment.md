@@ -1,36 +1,45 @@
 # Chương 12 — Deployment
 
-## Local (recommended for demo)
+## Local (Docker Compose)
 
-1. PostgreSQL 17 `localhost:5432` user `postgres` / `123456`
-2. `powershell -File scripts\init-postgres.ps1`
-3. `docker compose up -d rabbitmq`
-4. `powershell -File scripts\start-local.ps1` (builds jars and starts services)
-5. `cd frontend && npm install && npm run dev` → http://localhost:5173 (proxies `/api` to Gateway `:8080`)
+Cần Docker Desktop. Tắt PostgreSQL trên Windows nếu chiếm `:5432`.
 
-JDK 21: `C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot`
-
-## Docker Compose (full stack)
-
-Java images need jars in `*/target/*.jar` first (`mvn -DskipTests package`).
-
-Containers talk to **host PostgreSQL** via `host.docker.internal`. RabbitMQ runs in Compose.
-
-```
-docker compose build
-docker compose up -d
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
 ```
 
-Frontend: http://localhost:5173 (nginx → gateway `/api`)  
-Gateway: http://localhost:8080  
-RabbitMQ UI: http://localhost:15672 (`ecommerce` / `ecommerce`)  
-Eureka: http://localhost:8761 (optional; clients default `EUREKA_ENABLED=false`)
+1. Gỡ container trùng tên nếu thuộc project Compose khác.
+2. `mvn -DskipTests package` **một lần** trong container Maven (cache volume `gtvt-ecommerce-m2`).
+3. `docker compose up -d --build` — Postgres (7 DB), RabbitMQ, Eureka, Admin, 7 service, Gateway, Frontend.
+
+Lần sau **cùng lệnh**. Volume Postgres/RabbitMQ giữ data.
+
+| Trường hợp | Lệnh |
+|------------|------|
+| Đổi Java / pom | `scripts\deploy.ps1` |
+| Chỉ đổi Dockerfile/image, JAR đã build | `scripts\deploy.ps1 -SkipMaven` |
+| Container stop, không đổi code | `scripts\deploy.ps1 -RestartOnly` |
+
+Reset DB: `docker compose down -v` rồi `scripts\deploy.ps1`.
+
+| | URL |
+|--|-----|
+| Frontend | http://localhost:5173 |
+| Gateway | http://localhost:8080 |
+| Eureka | http://localhost:8761 |
+| Admin / flow | http://localhost:8088/flow |
+| RabbitMQ UI | http://localhost:15672 (`ecommerce` / `ecommerce`) |
+| Postgres | `localhost:5432` (`postgres` / `123456`) |
+
+Service-to-service: Feign URL `http://<service>:<port>` trong Compose. Eureka đăng ký instance; Gateway route URI tĩnh.
+
+Init DB: `docker/init-postgres.sql` (chỉ khi volume Postgres trống).
 
 ## Health
 
 - Gateway `GET http://localhost:8080/actuator/health`
-- Each service `GET http://localhost:<port>/actuator/health`
+- `docker compose ps`
 
 ## Environment
 
-See `.env.example`. Do not commit `.env`.
+`.env.example`. Không commit `.env`.

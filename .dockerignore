@@ -1,0 +1,17 @@
+.git
+.idea
+.vscode
+**/.mvn
+**/target/*original*.jar
+**/target/classes
+**/target/test-classes
+**/target/generated-sources
+**/node_modules
+frontend/dist
+frontend-bicycle/dist
+logs
+*.log
+docs
+postman
+**/*.iml
+.env

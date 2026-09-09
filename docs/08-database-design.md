@@ -13,7 +13,7 @@ Logical databases:
 
 `auth_db`, `product_db`, `cart_db`, `inventory_db`, `order_db`, `payment_db`, `notification_db`
 
-Khởi tạo: `scripts/init-postgres.ps1` / `docker/postgres/init-databases.sql`.
+Khởi tạo: `docker/init-postgres.sql` (Compose volume Postgres lần đầu).
 
 ERD tổng: `docs/diagrams/erd.mmd` (các cụm độc lập, không FK xuyên cụm).
 

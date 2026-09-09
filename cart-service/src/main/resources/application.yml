@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: CART-SERVICE
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URI:http://localhost:8088}
+        instance:
+          service-base-url: ${ADMIN_INSTANCE_BASE_URL:http://127.0.0.1:8083}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/cart_db
     username: ${DB_USERNAME:postgres}
@@ -16,11 +22,6 @@ spring:
         jdbc:
           time_zone: UTC
     open-in-view: false
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:ecommerce}
-    password: ${RABBITMQ_PASSWORD:ecommerce}
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-256-bits}

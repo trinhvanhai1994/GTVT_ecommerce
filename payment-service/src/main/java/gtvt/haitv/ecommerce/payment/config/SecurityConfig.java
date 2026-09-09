@@ -21,7 +21,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(JsonAuthHandlers.unauthorized())
                         .accessDeniedHandler(JsonAuthHandlers.forbidden()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/info").permitAll()
+                        .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/internal/payments/**").permitAll()
                         .requestMatchers("/api/payments/**").authenticated()
                         .anyRequest().authenticated())

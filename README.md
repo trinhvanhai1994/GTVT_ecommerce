@@ -2,15 +2,17 @@
 
 Cửa hàng trực tuyến (Spring Boot 3 + Spring Cloud + React). Khách chỉ nói chuyện với **một cửa**: API Gateway `:8080`. Các microservice phía sau tự chia việc — mỗi service một database, Order điều phối checkout, Notification nhận sự kiện qua RabbitMQ.
 
-Chi tiết kỹ thuật: `docs/06-architecture.md`.
+Chi tiết kỹ thuật: `docs/06-architecture.md`.  
+Luồng chạy Spring Cloud + map config (SA): `docs/15-spring-cloud-luong-chay-va-config.md`.  
+Deploy: `docs/12-deployment.md`.
 
 ## Hệ thống hoạt động như thế nào
 
 1. **Browser không gọi từng service.** React (`:5173`) chỉ gọi Gateway. Gateway route `/api/auth`, `/api/products`, `/api/cart`, `/api/orders`, …
 2. **Mỗi miền một service + một DB.** Auth không đọc `order_db`; Order không ghi `product_db`. Giao tiếp bằng REST (OpenFeign) hoặc event, không share bảng.
 3. **Checkout là Saga do Order cầm.** Order lần lượt: lấy giỏ → kiểm/giữ kho → thanh toán mock. Thành công thì trừ kho + xóa giỏ; thất bại thì nhả kho.
-4. **Email không nằm trong giao dịch đặt hàng.** Order publish event lên RabbitMQ; Notification consume rồi ghi log `[MOCK EMAIL]`.
-5. **Eureka** để service tìm nhau. **Admin `:8088/flow`** để xem log từng bước theo `cid`.
+4. **Email không nằm trong giao dịch đặt hàng.** Order publish event lên RabbitMQ; Notification consume rồi ghi log.
+5. **Eureka** để service đăng ký. **Admin `:8088/flow`** để xem log từng bước theo `cid`.
 
 ## Sơ đồ tổng quan
 
@@ -139,6 +141,8 @@ Notification **không rollback** đơn: event gửi sau khi Order đã commit.
 
 | Service | Port | Database | Việc chính |
 |---------|------|----------|------------|
+| postgres | 5432 | 7 logical DB | Dữ liệu (volume `postgres-data`) |
+| rabbitmq | 5672 / 15672 | — | Event Order → Notification |
 | eureka-server | 8761 | — | Service discovery |
 | admin-server | 8088 | — | Spring Boot Admin + UI `/flow` |
 | gateway | 8080 | — | Entry point, CORS, route `/api/**` |
@@ -148,84 +152,57 @@ Notification **không rollback** đơn: event gửi sau khi Order đã commit.
 | inventory-service | 8084 | inventory_db | Check / reserve / deduct / release |
 | order-service | 8085 | order_db | Tạo đơn, cầm Saga |
 | payment-service | 8086 | payment_db | Charge mock SUCCESS/FAILED |
-| notification-service | 8087 | notification_db | Consume RabbitMQ, mock email |
-| frontend | 5173 | — | Storefront chính |
-| frontend-bicycle | 5174 | — | VOLTRA e-bike storefront |
+| notification-service | 8087 | notification_db | Consume RabbitMQ |
+| frontend | 5173 | — | Storefront (nginx → Gateway `/api`) |
 
-## Requirements
+## Deploy
 
-- JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot`)
-- Maven 3.9
-- Node 22 / npm
-- PostgreSQL 17 `localhost:5432` `postgres` / `123456`
-- Docker (RabbitMQ; optional full compose)
-
-## Installation / Run
-
-Lần đầu (tạo DB, tạo container RabbitMQ, cài frontend):
+Cần **Docker Desktop**. Tắt PostgreSQL Windows nếu chiếm `:5432`.
 
 ```bat
-powershell -ExecutionPolicy Bypass -File scripts\init-postgres.ps1
-docker compose up -d rabbitmq
-powershell -ExecutionPolicy Bypass -File scripts\start-local.ps1
-cd frontend
-npm install
-npm run dev
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
 ```
 
-Open http://localhost:5173
+Maven package **một lần** (volume `gtvt-ecommerce-m2`) rồi `docker compose up -d --build`. Volume Postgres/RabbitMQ giữ data; init SQL chỉ khi volume Postgres trống. Leftover container từ project Compose khác bị gỡ trước `up`.
 
-## Chạy lại (lần sau)
+| | |
+|--|--|
+| Đổi code Java | `scripts\deploy.ps1` |
+| JAR đã có, chỉ rebuild image | `scripts\deploy.ps1 -SkipMaven` |
+| Bật lại container, không build | `scripts\deploy.ps1 -RestartOnly` |
 
-Không chạy lại `init-postgres` / `docker compose up` / `npm install`. Container `ecommerce-rabbitmq` đã tồn tại — `compose up` sẽ báo **Conflict**. Chỉ start lại:
+| | URL |
+|--|-----|
+| Storefront | http://localhost:5173 |
+| Gateway | http://localhost:8080 |
+| Eureka | http://localhost:8761 |
+| Admin / flow | http://localhost:8088/flow |
+| RabbitMQ UI | http://localhost:15672 (`ecommerce` / `ecommerce`) |
+| Postgres | `localhost:5432` (`postgres` / `123456`) |
 
-```bat
-docker start ecommerce-rabbitmq
-powershell -ExecutionPolicy Bypass -File scripts\start-local.ps1
-cd frontend
-npm run dev
-```
+Tắt PostgreSQL cài trên máy nếu đang chiếm `:5432`.
 
-Nếu RabbitMQ chưa có (máy mới / đã `docker rm`): dùng lại `docker compose up -d rabbitmq`.
+Reset sạch DB: `docker compose down -v` rồi chạy lại `scripts\deploy.ps1`.
 
-## Xem flow logs
+## Flow logs
 
-Mở **http://localhost:8088/flow** — hub gom log `start` / bước / `end` / `HTTP` của Gateway và mọi service (tự refresh 3s).
+**http://localhost:8088/flow** — hub (trong container Admin) gọi `/actuator/logfile` qua DNS Compose (`http://gateway:8080`, `http://auth:8081`, …), không dùng `localhost`. Tự refresh 3s. Tìm `cid` hoặc `start checkout`.
 
-Spring Boot Admin (instances, logfile đầy đủ): **http://localhost:8088**
+Spring Boot Admin: **http://localhost:8088**
 
-1. Restart backend (RabbitMQ đã chạy hoặc vừa `docker start`):
-
-```bat
-powershell -ExecutionPolicy Bypass -File scripts\start-local.ps1
-```
-
-2. Gọi API qua Gateway `http://localhost:8080` (login, xem sản phẩm, checkout…).
-
-3. Xem trên `/flow`, hoặc file `logs/*.log`, hoặc:
-
-```bat
-powershell -File scripts\watch-logs.ps1
-powershell -File scripts\watch-logs.ps1 -Service ORDER-SERVICE
-```
-
-Tìm theo `cid` (8 ký tự) hoặc chữ `start checkout` / `end checkout`.
+Log container: `docker compose logs -f order` (đổi tên service trong `docker-compose.yml`).
 
 ## Environment
 
-Copy `.env.example`. JWT, DB, RabbitMQ via env. Do not commit `.env`.
+Copy `.env.example` nếu cần đổi JWT / DB / RabbitMQ. Không commit `.env`. Compose đọc biến này khi `up`.
 
 ## Test
 
-```bat
-set JAVA_HOME=C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot
-mvn test
-powershell -File scripts\e2e-verify.ps1
-```
+Stack đã lên: `powershell -File scripts\e2e-verify.ps1` (gọi Gateway `:8080`).
 
 ## Swagger
 
-`http://localhost:8081/swagger-ui.html` (auth) and similarly 8082–8087.
+Từng service (không qua Gateway): `http://localhost:8081/swagger-ui.html` … `:8087`. Spec: `/v3/api-docs`.
 
 ## Demo accounts
 
@@ -233,19 +210,13 @@ powershell -File scripts\e2e-verify.ps1
 - customer@example.com / Password123
 - customer2@example.com / Password123
 
-## Demo scenario
-
-`docs/13-demo.md` — Golden Path (payment success + stock deduct) and Failure Path (PAYMENT_FAILED + release).
-
-## Postman
-
-`postman/ecommerce.postman_collection.json` — baseUrl `http://localhost:8080`.
+Kịch bản Golden Path / Failure Path: `docs/13-demo.md`.  
+Postman: `postman/ecommerce.postman_collection.json` (`baseUrl` `http://localhost:8080`).
 
 ## Troubleshooting
 
-- Java 8 on PATH: set JAVA_HOME to JDK 21.
-- Gateway 401: login again, paste Bearer token.
-- Empty catalog: wait for product-service seeder; use fresh product_db.
-- RabbitMQ connection: `docker start ecommerce-rabbitmq` (lần sau). Lần đầu hoặc đã xóa container: `docker compose up -d rabbitmq`.
-- RabbitMQ name conflict (`/ecommerce-rabbitmq` already in use): `docker start ecommerce-rabbitmq` — không `compose up` lại.
-- Inventory not found: admin PUT `/api/inventory/{productId}`.
+- **Port 5432 in use:** dừng PostgreSQL Windows, chạy lại `scripts\deploy.ps1`.
+- **Container name Conflict:** chạy `scripts\deploy.ps1` (gỡ leftover từ project khác, ví dụ folder `e-commerce`). Không dùng `docker compose down -v` trừ khi muốn xóa DB.
+- **Gateway 401:** login lại, gửi `Authorization: Bearer`.
+- **Catalog trống:** đợi product-service seeder; hoặc `docker compose down -v` rồi deploy lại.
+- **Inventory not found:** admin PUT `/api/inventory/{productId}`.
