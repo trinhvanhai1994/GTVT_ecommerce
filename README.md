@@ -155,68 +155,85 @@ Notification **không rollback** đơn: event gửi sau khi Order đã commit.
 | notification-service | 8087 | notification_db | Consume RabbitMQ |
 | frontend | 5173 | — | Storefront (nginx → Gateway `/api`) |
 
-## Deploy
+## Chạy local (Docker Compose)
 
-Cần **Docker Desktop**. Tắt PostgreSQL Windows nếu chiếm `:5432`.
+Cần **Docker Desktop** đang chạy. Tắt PostgreSQL cài trên Windows nếu đang chiếm cổng **5432**.
+
+### 1. Lên toàn bộ stack
+
+Trong thư mục gốc repo:
 
 ```bat
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
 ```
 
-Maven package **một lần** (volume `gtvt-ecommerce-m2`) rồi `docker compose up -d --build`. Volume Postgres/RabbitMQ giữ data; init SQL chỉ khi volume Postgres trống. Leftover container từ project Compose khác bị gỡ trước `up`.
+Lệnh này:
 
-| | |
-|--|--|
-| Đổi code Java | `scripts\deploy.ps1` |
-| JAR đã có, chỉ rebuild image | `scripts\deploy.ps1 -SkipMaven` |
-| Bật lại container, không build | `scripts\deploy.ps1 -RestartOnly` |
+1. Gỡ container trùng tên nếu chúng thuộc project Compose **khác** (tránh Conflict `ecommerce-rabbitmq`).
+2. Build JAR **một lần** trong container Maven (`mvn -DskipTests package`, cache volume `gtvt-ecommerce-m2`).
+3. `docker compose up -d --build` — Postgres (7 DB), RabbitMQ, Eureka, Admin, 7 microservice, Gateway, Frontend.
 
-| | URL |
-|--|-----|
-| Storefront | http://localhost:5173 |
-| Gateway | http://localhost:8080 |
-| Eureka | http://localhost:8761 |
-| Admin / flow | http://localhost:8088/flow |
-| RabbitMQ UI | http://localhost:15672 (`ecommerce` / `ecommerce`) |
-| Postgres | `localhost:5432` (`postgres` / `123456`) |
+Lần đầu mất vài phút (kéo image + Maven). Lần sau cùng lệnh: data Postgres/RabbitMQ **giữ nguyên** (volume). Init DB (`docker/init-postgres.sql`) chỉ chạy khi volume Postgres còn trống.
 
-Tắt PostgreSQL cài trên máy nếu đang chiếm `:5432`.
+Tương đương từng bước (nếu không dùng script):
 
-Reset sạch DB: `docker compose down -v` rồi chạy lại `scripts\deploy.ps1`.
+```bat
+docker compose up -d --build
+```
 
-## Flow logs
+(Cần JAR trong `*/target/*-SNAPSHOT.jar` trước — script đã lo bước Maven.)
 
-**http://localhost:8088/flow** — hub (trong container Admin) gọi `/actuator/logfile` qua DNS Compose (`http://gateway:8080`, `http://auth:8081`, …), không dùng `localhost`. Tự refresh 3s. Tìm `cid` hoặc `start checkout`.
+Đợi container `healthy` / `started`: `docker compose ps`
 
-Spring Boot Admin: **http://localhost:8088**
+### 2. Mở ứng dụng
 
-Log container: `docker compose logs -f order` (đổi tên service trong `docker-compose.yml`).
+| | URL | Tài khoản |
+|--|-----|-----------|
+| Storefront | http://localhost:5173 | customer@example.com / Password123 |
+| Gateway API | http://localhost:8080 | Bearer JWT sau login |
+| Flow logs | http://localhost:8088/flow | — |
+| Spring Boot Admin | http://localhost:8088 | admin / admin |
+| Eureka | http://localhost:8761 | — |
+| RabbitMQ UI | http://localhost:15672 | ecommerce / ecommerce |
+| Postgres | localhost:5432 | postgres / 123456 |
+| Swagger (từng service) | http://localhost:8081/swagger-ui.html … `:8087` | — |
 
-## Environment
+Admin UI: admin@example.com / Password123. User phụ: customer2@example.com / Password123.
 
-Copy `.env.example` nếu cần đổi JWT / DB / RabbitMQ. Không commit `.env`. Compose đọc biến này khi `up`.
+Hub `/flow` gọi logfile **trong mạng Docker** (`http://gateway:8080`, `http://auth:8081`, …), không dùng `localhost` từ container Admin.
 
-## Test
+### 3. Lệnh hàng ngày
 
-Stack đã lên: `powershell -File scripts\e2e-verify.ps1` (gọi Gateway `:8080`).
+| Việc | Lệnh |
+|------|------|
+| Đổi code Java / pom | `scripts\deploy.ps1` |
+| JAR đã build, chỉ đóng image lại | `scripts\deploy.ps1 -SkipMaven` |
+| Container bị stop, không đổi code | `scripts\deploy.ps1 -RestartOnly` hoặc `docker compose start` |
+| Xem log một service | `docker compose logs -f order` (đổi `order` / `gateway` / `auth` / …) |
+| Trạng thái | `docker compose ps` |
+| Dừng stack (giữ DB) | `docker compose stop` |
+| Xóa container, **giữ** volume DB | `docker compose down` |
+| Xóa sạch DB + RabbitMQ data | `docker compose down -v` rồi `scripts\deploy.ps1` |
 
-## Swagger
+Health Gateway: `GET http://localhost:8080/actuator/health`  
+E2E: `powershell -File scripts\e2e-verify.ps1`
 
-Từng service (không qua Gateway): `http://localhost:8081/swagger-ui.html` … `:8087`. Spec: `/v3/api-docs`.
+### 4. Cấu hình
 
-## Demo accounts
+Copy `.env.example` → `.env` nếu đổi mật khẩu DB / JWT / RabbitMQ. Không commit `.env`. Compose đọc file này khi `up`.
 
-- admin@example.com / Password123
-- customer@example.com / Password123
-- customer2@example.com / Password123
+Mạng nội bộ: Feign và Admin dùng hostname Compose (`postgres`, `rabbitmq`, `eureka`, `auth`, `gateway`, `admin`, …).
 
-Kịch bản Golden Path / Failure Path: `docs/13-demo.md`.  
-Postman: `postman/ecommerce.postman_collection.json` (`baseUrl` `http://localhost:8080`).
+Chi tiết kỹ thuật: `docs/12-deployment.md`. Demo checkout: `docs/13-demo.md`. Postman: `postman/ecommerce.postman_collection.json` (`baseUrl` `http://localhost:8080`).
 
-## Troubleshooting
+### 5. Lỗi thường gặp
 
-- **Port 5432 in use:** dừng PostgreSQL Windows, chạy lại `scripts\deploy.ps1`.
-- **Container name Conflict:** chạy `scripts\deploy.ps1` (gỡ leftover từ project khác, ví dụ folder `e-commerce`). Không dùng `docker compose down -v` trừ khi muốn xóa DB.
-- **Gateway 401:** login lại, gửi `Authorization: Bearer`.
-- **Catalog trống:** đợi product-service seeder; hoặc `docker compose down -v` rồi deploy lại.
-- **Inventory not found:** admin PUT `/api/inventory/{productId}`.
+| Hiện tượng | Cách xử lý |
+|------------|------------|
+| Port 5432 already allocated | Dừng PostgreSQL Windows, chạy lại `deploy.ps1` |
+| Conflict container name | `scripts\deploy.ps1` (gỡ leftover project khác). Không `down -v` trừ khi muốn xóa DB |
+| `/flow` Connection refused `localhost:808x` | Image Admin cũ — `deploy.ps1` để lấy URL `http://gateway:8080` |
+| Log `localhost:8088` Connection refused | Image service cũ — rebuild để Admin client trỏ `http://admin:8088` |
+| Gateway 401 | Login lại, header `Authorization: Bearer` |
+| Catalog trống | Đợi seeder product; hoặc `docker compose down -v` rồi deploy lại |
+| Inventory not found | Admin PUT `/api/inventory/{productId}` |
