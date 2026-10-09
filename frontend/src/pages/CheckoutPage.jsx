@@ -32,7 +32,7 @@ export default function CheckoutPage() {
     try {
       const { data } = await api.post("/orders", form);
       await refresh();
-      navigate(`/orders/${data.data.id}`, { state: { result: data.data } });
+      navigate(`/orders/${data.data.id}`, { state: { result: data.data, justPlaced: true } });
     } catch (err) {
       setError(err);
     } finally {
@@ -51,6 +51,9 @@ export default function CheckoutPage() {
           <h1>Thanh toán</h1>
         </div>
         <ErrorBanner error={error} />
+        <div className="info-pill">
+          Xác nhận đơn &amp; cập nhật trạng thái sẽ gửi tới <strong>{user?.email || "email tài khoản"}</strong>
+        </div>
         <label>
           Người nhận
           <input value={form.shippingName} onChange={(e) => setForm({ ...form, shippingName: e.target.value })} required />
@@ -91,6 +94,11 @@ export default function CheckoutPage() {
           <strong>{items.reduce((s, i) => s + i.quantity, 0)}</strong>
         </p>
         <p className="muted">Giá chốt tại thời điểm đặt — không đổi nếu giá catalog thay đổi sau đó.</p>
+        <hr className="soft-rule" />
+        <p className="muted">
+          Sau khi thanh toán thành công bạn sẽ nhận email xác nhận và có thể theo dõi tiến trình trong mục Đơn hàng / Thông
+          báo.
+        </p>
       </aside>
     </section>
   );

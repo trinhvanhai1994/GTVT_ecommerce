@@ -14,6 +14,14 @@ x-db-env: &db-env
   EUREKA_URI: http://eureka:8761/eureka
   ADMIN_SERVER_URI: http://admin:8088
 
+x-mail-env: &mail-env
+  MAIL_ENABLED: ${MAIL_ENABLED:-true}
+  BREVO_API_KEY: ${BREVO_API_KEY:-}
+  MAIL_FROM: ${MAIL_FROM:-reply@debase.vn}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Nava}
+  STORE_PUBLIC_URL: ${STORE_PUBLIC_URL:-http://localhost:5173}
+  BREVO_API_BASE_URL: ${BREVO_API_BASE_URL:-https://api.brevo.com}
+
 services:
   postgres:
     image: postgres:17
@@ -128,7 +136,7 @@ services:
     image: gtvt-ecommerce-auth
     container_name: ecommerce-auth
     environment:
-      <<: *db-env
+      <<: [*db-env, *mail-env]
       SERVER_PORT: 8081
       ADMIN_INSTANCE_BASE_URL: http://auth:8081
     ports:
@@ -258,7 +266,7 @@ services:
     image: gtvt-ecommerce-notification
     container_name: ecommerce-notification
     environment:
-      <<: *db-env
+      <<: [*db-env, *mail-env]
       SERVER_PORT: 8087
       ADMIN_INSTANCE_BASE_URL: http://notification:8087
       RABBITMQ_HOST: rabbitmq

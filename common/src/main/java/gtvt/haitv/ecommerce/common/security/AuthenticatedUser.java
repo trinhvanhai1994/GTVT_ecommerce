@@ -23,6 +23,10 @@ public class AuthenticatedUser implements UserDetails {
         return userId;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
     public String getRole() {
         return role;
     }

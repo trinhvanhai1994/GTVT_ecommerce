@@ -24,4 +24,17 @@ class NotificationServiceTests {
         assertEquals(1, repository.count());
         assertEquals("ORDER_CONFIRMED", repository.findAll().getFirst().getEventType());
     }
+
+    @Test
+    void consumeEventWithEmailWhenMailDisabledStillPersists() {
+        repository.deleteAll();
+        OrderEvent event = new OrderEvent(
+                OrderEvent.ORDER_CONFIRMED, 2L, 11L, "customer@example.com", "Confirmed", "ok");
+        notificationService.handle(event);
+        assertEquals(1, repository.count());
+        var saved = repository.findAll().getFirst();
+        assertEquals("ORDER_CONFIRMED", saved.getEventType());
+        assertEquals("CONSOLE", saved.getChannel());
+        assertEquals("SENT", saved.getStatus());
+    }
 }

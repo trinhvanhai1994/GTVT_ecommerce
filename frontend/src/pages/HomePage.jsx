@@ -49,8 +49,8 @@ export default function HomePage() {
           <span>COD hoặc thẻ / CK demo</span>
         </div>
         <div>
-          <strong>Hỗ trợ nhanh</strong>
-          <span>Theo dõi đơn đến từng bước</span>
+          <strong>Email từng bước</strong>
+          <span>Xác nhận đơn, giao hàng, hủy — vào hộp thư</span>
         </div>
       </section>
 

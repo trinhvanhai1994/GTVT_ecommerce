@@ -48,7 +48,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse checkout(Long userId, CheckoutRequest request) {
+    public OrderResponse checkout(Long userId, String customerEmail, CheckoutRequest request) {
         FlowLog f = FlowLog.start("checkout");
         try {
             f.step("cart");
@@ -60,6 +60,7 @@ public class OrderService {
 
             Order order = new Order();
             order.setUserId(userId);
+            order.setCustomerEmail(customerEmail);
             order.setStatus("PAYMENT_PENDING");
             order.setShippingName(request.getShippingName());
             order.setShippingPhone(request.getShippingPhone());
@@ -96,8 +97,7 @@ public class OrderService {
             orderRepository.save(order);
             inventoryClient.reserve(stockReq);
             f.step("saved+reserve orderId=" + order.getId());
-            eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.ORDER_CREATED, userId, order.getId(),
-                    "Order created", "Order #" + order.getId() + " created"));
+            publish(order, OrderEvent.ORDER_CREATED, "Order created", "Order #" + order.getId() + " created");
 
             PaymentClient.CreatePaymentRequest payReq = new PaymentClient.CreatePaymentRequest();
             payReq.setOrderId(order.getId());
@@ -120,10 +120,10 @@ public class OrderService {
                 inventoryClient.deduct(stockReq);
                 order.setStatus("CONFIRMED");
                 cartClient.clearCart(userId);
-                eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.PAYMENT_SUCCESS, userId, order.getId(),
-                        "Payment success", "Payment succeeded for order #" + order.getId()));
-                eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.ORDER_CONFIRMED, userId, order.getId(),
-                        "Order confirmed", "Order #" + order.getId() + " confirmed"));
+                publish(order, OrderEvent.PAYMENT_SUCCESS, "Payment success",
+                        "Payment succeeded for order #" + order.getId());
+                publish(order, OrderEvent.ORDER_CONFIRMED, "Order confirmed",
+                        "Order #" + order.getId() + " confirmed. Total: " + order.getTotalAmount());
                 OrderResponse response = OrderResponse.from(order);
                 response.setPayment(new OrderResponse.PaymentSnapshot(payment.getId(), payment.getStatus()));
                 f.end("CONFIRMED orderId=" + order.getId());
@@ -152,8 +152,8 @@ public class OrderService {
             FlowLog.start("compensate").fail("release " + order.getId());
         }
         order.setStatus("PAYMENT_FAILED");
-        eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.PAYMENT_FAILED, order.getUserId(), order.getId(),
-                "Payment failed", "Payment failed for order #" + order.getId()));
+        publish(order, OrderEvent.PAYMENT_FAILED, "Payment failed",
+                "Payment failed for order #" + order.getId());
     }
 
     @Transactional(readOnly = true)
@@ -205,6 +205,8 @@ public class OrderService {
                 }
             }
             order.setStatus("CANCELLED");
+            publish(order, OrderEvent.ORDER_CANCELLED, "Order cancelled",
+                    "Order #" + order.getId() + " was cancelled");
             f.end("id=" + id);
             return OrderResponse.from(order);
         } catch (RuntimeException e) {
@@ -235,20 +237,25 @@ public class OrderService {
             Order order = order(id);
             order.setStatus(status);
             f.step(status);
-            if ("SHIPPING".equals(status)) {
-                eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.ORDER_SHIPPED, order.getUserId(), order.getId(),
-                        "Order shipped", "Order #" + order.getId() + " shipped"));
-            }
-            if ("DELIVERED".equals(status)) {
-                eventPublisher.publishAfterCommit(new OrderEvent(OrderEvent.ORDER_DELIVERED, order.getUserId(), order.getId(),
-                        "Order delivered", "Order #" + order.getId() + " delivered"));
-            }
+            String eventType = switch (status) {
+                case "SHIPPING" -> OrderEvent.ORDER_SHIPPED;
+                case "DELIVERED" -> OrderEvent.ORDER_DELIVERED;
+                case "CANCELLED" -> OrderEvent.ORDER_CANCELLED;
+                default -> OrderEvent.ORDER_STATUS_UPDATED;
+            };
+            publish(order, eventType, "Order status: " + status,
+                    "Order #" + order.getId() + " is now " + status);
             f.end("id=" + id);
             return OrderResponse.from(order);
         } catch (RuntimeException e) {
             f.fail(e);
             throw e;
         }
+    }
+
+    private void publish(Order order, String eventType, String title, String message) {
+        eventPublisher.publishAfterCommit(new OrderEvent(
+                eventType, order.getUserId(), order.getId(), order.getCustomerEmail(), title, message));
     }
 
     private InventoryClient.StockItemsRequest toStock(Order order) {

@@ -20,11 +20,27 @@ export default function OrderListPage() {
   if (loading) return <Loading />;
   return (
     <section>
-      <div className="page-title">
-        <h1>Đơn hàng của tôi</h1>
+      <div className="page-title row-between">
+        <div>
+          <h1>Đơn hàng của tôi</h1>
+          <p className="muted">Theo dõi trạng thái và email cập nhật từng bước.</p>
+        </div>
+        <Link className="btn btn-ghost btn-sm" to="/notifications">
+          Thông báo
+        </Link>
       </div>
       <ErrorBanner error={error} />
-      {orders.length === 0 && <Empty title="Chưa có đơn nào" text="Khi bạn đặt hàng, tiến trình sẽ hiện ở đây." />}
+      {orders.length === 0 && (
+        <Empty
+          title="Chưa có đơn nào"
+          text="Khi bạn đặt hàng, tiến trình và email xác nhận sẽ hiện ở đây."
+          action={
+            <Link className="btn" to="/products">
+              Mua sắm
+            </Link>
+          }
+        />
+      )}
       <ul className="order-list">
         {orders.map((o) => (
           <li key={o.id}>
@@ -32,6 +48,7 @@ export default function OrderListPage() {
               <div>
                 <strong>Đơn #{o.id}</strong>
                 <p className="muted">{o.shippingAddress}</p>
+                {o.customerEmail && <p className="muted tiny">Mail: {o.customerEmail}</p>}
               </div>
               <span className={`status ${o.status}`}>{STATUS_LABEL[o.status] || o.status}</span>
               <span className="price">{money(o.totalAmount)}</span>

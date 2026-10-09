@@ -22,9 +22,13 @@ api.interceptors.response.use(
     const message = payload?.message || error.message || "Network error";
     const code = payload?.code;
     const url = String(error.config?.url || "");
-    const isLogin = url.includes("/auth/login") || url.includes("/auth/register");
+    const isAuthPublic =
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password");
     const hadAuth = Boolean(error.config?.headers?.Authorization);
-    if (status === 401 && !isLogin && hadAuth) {
+    if (status === 401 && !isAuthPublic && hadAuth) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.dispatchEvent(new Event("auth:expired"));

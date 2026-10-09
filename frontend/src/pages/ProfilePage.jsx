@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../services/api";
 import { ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [profile, setProfile] = useState(user);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,24 @@ export default function ProfilePage() {
           <dd>{profile.status}</dd>
         </dl>
       )}
+      <p className="muted">
+        Email này nhận thư chào mừng, đặt lại mật khẩu và cập nhật đơn hàng.
+      </p>
+      <div className="profile-actions">
+        <Link className="btn btn-ghost" to="/forgot-password" state={{ email: profile?.email }}>
+          Đổi mật khẩu qua email
+        </Link>
+        {!isAdmin && (
+          <>
+            <Link className="btn btn-ghost" to="/orders">
+              Đơn hàng
+            </Link>
+            <Link className="btn btn-ghost" to="/notifications">
+              Thông báo
+            </Link>
+          </>
+        )}
+      </div>
     </section>
   );
 }

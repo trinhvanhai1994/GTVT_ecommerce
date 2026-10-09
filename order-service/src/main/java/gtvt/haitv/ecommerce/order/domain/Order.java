@@ -24,6 +24,8 @@ public class Order {
     private Long id;
     @Column(name = "user_id", nullable = false)
     private Long userId;
+    @Column(name = "customer_email", length = 255)
+    private String customerEmail;
     @Column(nullable = false, length = 32)
     private String status;
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
@@ -57,6 +59,8 @@ public class Order {
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public BigDecimal getTotalAmount() { return totalAmount; }

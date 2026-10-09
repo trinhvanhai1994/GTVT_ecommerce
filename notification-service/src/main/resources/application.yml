@@ -32,6 +32,14 @@ jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-256-bits}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
+mail:
+  enabled: ${MAIL_ENABLED:false}
+  from: ${MAIL_FROM:}
+  from-name: ${MAIL_FROM_NAME:Nava}
+  store-url: ${STORE_PUBLIC_URL:http://localhost:5173}
+  brevo-api-key: ${BREVO_API_KEY:}
+  brevo-api-base-url: ${BREVO_API_BASE_URL:https://api.brevo.com}
+
 eureka:
   client:
     enabled: ${EUREKA_ENABLED:true}

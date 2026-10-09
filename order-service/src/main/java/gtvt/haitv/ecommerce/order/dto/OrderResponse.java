@@ -11,6 +11,7 @@ public class OrderResponse {
     private Long userId;
     private String status;
     private BigDecimal totalAmount;
+    private String customerEmail;
     private String shippingName;
     private String shippingPhone;
     private String shippingAddress;
@@ -24,6 +25,7 @@ public class OrderResponse {
         r.userId = order.getUserId();
         r.status = order.getStatus();
         r.totalAmount = order.getTotalAmount();
+        r.customerEmail = order.getCustomerEmail();
         r.shippingName = order.getShippingName();
         r.shippingPhone = order.getShippingPhone();
         r.shippingAddress = order.getShippingAddress();
@@ -38,6 +40,7 @@ public class OrderResponse {
     public Long getUserId() { return userId; }
     public String getStatus() { return status; }
     public BigDecimal getTotalAmount() { return totalAmount; }
+    public String getCustomerEmail() { return customerEmail; }
     public String getShippingName() { return shippingName; }
     public String getShippingPhone() { return shippingPhone; }
     public String getShippingAddress() { return shippingAddress; }

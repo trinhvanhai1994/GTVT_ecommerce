@@ -18,3 +18,10 @@ eureka:
 jwt:
   secret: test-secret-key-which-is-at-least-thirty-two-chars
   expiration-ms: 3600000
+mail:
+  enabled: false
+  from: test@example.com
+  from-name: Nava Test
+  store-url: http://localhost:5173
+  brevo-api-key: ""
+  brevo-api-base-url: https://api.brevo.com

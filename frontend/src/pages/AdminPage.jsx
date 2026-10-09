@@ -452,6 +452,8 @@ function OrdersAdmin({ onOpenCount }) {
   }, []);
 
   const patch = async (id, status) => {
+    const label = STATUS_LABEL[status] || status;
+    if (!window.confirm(`Chuyển đơn #${id} sang “${label}”? Khách sẽ nhận email cập nhật.`)) return;
     setError(null);
     try {
       await api.patch(`/admin/orders/${id}/status`, { status });
@@ -466,7 +468,7 @@ function OrdersAdmin({ onOpenCount }) {
   return (
     <div className="admin-card">
       <div className="panel-title">
-        <p className="muted">Mỗi đơn một hành động kế tiếp — tránh bấm nhầm trạng thái.</p>
+        <p className="muted">Mỗi lần đổi trạng thái → gửi email tới email khách trên đơn (không dùng email admin).</p>
         <select value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="OPEN">Đang mở</option>
           <option value="ALL">Tất cả</option>
@@ -481,6 +483,7 @@ function OrdersAdmin({ onOpenCount }) {
             <tr>
               <th>Đơn</th>
               <th>Khách</th>
+              <th>Email thông báo</th>
               <th>Trạng thái</th>
               <th className="num">Tổng</th>
               <th>Việc tiếp theo</th>
@@ -495,6 +498,13 @@ function OrdersAdmin({ onOpenCount }) {
                   <td>
                     {o.shippingName}
                     <div className="muted">{o.shippingAddress}</div>
+                  </td>
+                  <td>
+                    {o.customerEmail ? (
+                      <span className="email-cell">{o.customerEmail}</span>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
                   </td>
                   <td>
                     <span className={`status ${o.status}`}>{STATUS_LABEL[o.status] || o.status}</span>

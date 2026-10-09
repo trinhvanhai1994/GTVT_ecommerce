@@ -16,6 +16,35 @@ export const STATUS_LABEL = {
   INACTIVE: "Ngừng bán"
 };
 
+/** Happy-path steps shown on order detail / checkout. */
+export const ORDER_FLOW = ["CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED"];
+
+export const CHANNEL_LABEL = {
+  EMAIL: "Email",
+  CONSOLE: "Hệ thống",
+  MOCK: "Demo"
+};
+
+export function formatWhen(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date(value));
+  } catch {
+    return String(value);
+  }
+}
+
+export function flowIndex(status) {
+  if (status === "CANCELLED" || status === "PAYMENT_FAILED") return -1;
+  const i = ORDER_FLOW.indexOf(status);
+  if (i >= 0) return i;
+  if (status === "PENDING" || status === "PAYMENT_PENDING") return -0.5;
+  return -1;
+}
+
 const PHOTOS = [
   "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
   "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=900&q=80",

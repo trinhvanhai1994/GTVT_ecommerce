@@ -1,8 +1,10 @@
 package gtvt.haitv.ecommerce.auth.controller;
 
+import gtvt.haitv.ecommerce.auth.dto.ForgotPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginResponse;
 import gtvt.haitv.ecommerce.auth.dto.RegisterRequest;
+import gtvt.haitv.ecommerce.auth.dto.ResetPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.UserResponse;
 import gtvt.haitv.ecommerce.auth.service.AuthService;
 import gtvt.haitv.ecommerce.common.api.ApiResponse;
@@ -35,6 +37,18 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ApiResponse.ok("If the email exists, a reset link has been sent", null);
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.ok("Password updated", null);
     }
 
     @GetMapping("/profile")

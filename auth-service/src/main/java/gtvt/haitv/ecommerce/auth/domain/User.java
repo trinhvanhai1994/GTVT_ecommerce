@@ -34,6 +34,12 @@ public class User {
     @Column(nullable = false, length = 32)
     private String status;
 
+    @Column(name = "password_reset_token", length = 128)
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expires")
+    private Instant passwordResetExpires;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -104,6 +110,22 @@ public class User {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
+    public Instant getPasswordResetExpires() {
+        return passwordResetExpires;
+    }
+
+    public void setPasswordResetExpires(Instant passwordResetExpires) {
+        this.passwordResetExpires = passwordResetExpires;
     }
 
     public Instant getCreatedAt() {

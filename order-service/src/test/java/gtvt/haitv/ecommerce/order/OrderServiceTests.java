@@ -80,7 +80,7 @@ class OrderServiceTests {
         pay.setId(9L);
         pay.setStatus("SUCCESS");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
-        var order = orderService.checkout(5L, checkout());
+        var order = orderService.checkout(5L, "customer@example.com", checkout());
         assertEquals("CONFIRMED", order.getStatus());
         assertEquals(0, new BigDecimal("200.00").compareTo(order.getTotalAmount()));
     }
@@ -91,7 +91,7 @@ class OrderServiceTests {
         InventoryClient.CheckResponse check = new InventoryClient.CheckResponse();
         check.setAvailable(false);
         when(inventoryClient.check(any())).thenReturn(ApiResponse.ok(check));
-        assertThrows(ApiException.class, () -> orderService.checkout(5L, checkout()));
+        assertThrows(ApiException.class, () -> orderService.checkout(5L, "customer@example.com", checkout()));
     }
 
     @Test
@@ -106,7 +106,7 @@ class OrderServiceTests {
         pay.setId(9L);
         pay.setStatus("FAILED");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
-        var order = orderService.checkout(5L, checkout());
+        var order = orderService.checkout(5L, "customer@example.com", checkout());
         assertEquals("PAYMENT_FAILED", order.getStatus());
     }
 
@@ -115,7 +115,7 @@ class OrderServiceTests {
         CartClient.RemoteCart cart = new CartClient.RemoteCart();
         cart.setItems(List.of());
         when(cartClient.getCart(5L)).thenReturn(ApiResponse.ok(cart));
-        assertThrows(ApiException.class, () -> orderService.checkout(5L, checkout()));
+        assertThrows(ApiException.class, () -> orderService.checkout(5L, "customer@example.com", checkout()));
     }
 
     @Test
@@ -132,7 +132,7 @@ class OrderServiceTests {
         pay.setId(9L);
         pay.setStatus("SUCCESS");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
-        var created = orderService.checkout(5L, checkout());
+        var created = orderService.checkout(5L, "customer@example.com", checkout());
         var cancelled = orderService.cancel(created.getId(), 5L);
         assertEquals("CANCELLED", cancelled.getStatus());
     }

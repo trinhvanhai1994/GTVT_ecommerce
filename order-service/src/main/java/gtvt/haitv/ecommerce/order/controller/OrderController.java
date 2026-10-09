@@ -30,7 +30,8 @@ public class OrderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
-        return ApiResponse.ok("Created", orderService.checkout(SecurityUtils.currentUserId(), request));
+        var user = SecurityUtils.currentUser();
+        return ApiResponse.ok("Created", orderService.checkout(user.getUserId(), user.getEmail(), request));
     }
 
     @GetMapping

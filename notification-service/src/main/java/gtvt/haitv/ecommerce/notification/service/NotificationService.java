@@ -2,6 +2,8 @@ package gtvt.haitv.ecommerce.notification.service;
 
 import gtvt.haitv.ecommerce.common.event.OrderEvent;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
+import gtvt.haitv.ecommerce.common.mail.EmailService;
+import gtvt.haitv.ecommerce.common.mail.MailProperties;
 import gtvt.haitv.ecommerce.notification.domain.Notification;
 import gtvt.haitv.ecommerce.notification.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
@@ -13,9 +15,13 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository repository;
+    private final EmailService emailService;
+    private final MailProperties mailProperties;
 
-    public NotificationService(NotificationRepository repository) {
+    public NotificationService(NotificationRepository repository, EmailService emailService, MailProperties mailProperties) {
         this.repository = repository;
+        this.emailService = emailService;
+        this.mailProperties = mailProperties;
     }
 
     @Transactional
@@ -30,6 +36,19 @@ public class NotificationService {
         n.setChannel("CONSOLE");
         n.setStatus("SENT");
         repository.save(n);
+
+        String email = event.getEmail();
+        if (email != null && !email.isBlank()) {
+            String subject = n.getTitle();
+            String body = n.getMessage() + (event.getOrderId() == null ? "" : "\nOrder ID: " + event.getOrderId());
+            boolean sent = emailService.send(email.trim(), subject, body);
+            if (mailProperties.isEnabled()) {
+                n.setChannel("EMAIL");
+                n.setStatus(sent ? "SENT" : "FAILED");
+                repository.save(n);
+            }
+        }
+
         f.end(event.getEventType() + " userId=" + event.getUserId() + " orderId=" + event.getOrderId());
     }
 
