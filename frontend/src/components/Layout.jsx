@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import api from "../services/api";
+import { countUnread, markNotificationsSeen } from "../utils/notifyRead";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { IconBell, IconCart, IconChevron, IconClose, IconMenu, IconSearch } from "./icons.jsx";
 
@@ -58,7 +59,15 @@ export default function Layout() {
       api
         .get("/notifications")
         .then((res) => {
-          if (!cancelled) setNotifyCount((res.data.data || []).length);
+          if (cancelled) return;
+          const list = res.data.data || [];
+          // Đang ở trang thông báo → coi như đã đọc hết
+          if (location.pathname.startsWith("/notifications")) {
+            markNotificationsSeen(list, user?.id);
+            setNotifyCount(0);
+          } else {
+            setNotifyCount(countUnread(list, user?.id));
+          }
         })
         .catch(() => {
           if (!cancelled) setNotifyCount(0);
@@ -66,11 +75,14 @@ export default function Layout() {
     };
     load();
     const timer = setInterval(load, 60000);
+    const onSeen = () => setNotifyCount(0);
+    window.addEventListener("notify:seen", onSeen);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      window.removeEventListener("notify:seen", onSeen);
     };
-  }, [isAuthenticated, isAdmin, location.pathname]);
+  }, [isAuthenticated, isAdmin, location.pathname, user?.id]);
 
   const search = (e) => {
     e.preventDefault();
@@ -140,9 +152,16 @@ export default function Layout() {
                   <Link
                     to="/notifications"
                     className="icon-btn"
-                    aria-label={notifyCount > 0 ? `Thông báo (${notifyCount})` : "Thông báo"}
+                    aria-label={notifyCount > 0 ? `Thông báo chưa đọc (${notifyCount})` : "Thông báo"}
                     title="Thông báo"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setNotifyCount(0);
+                      api
+                        .get("/notifications")
+                        .then((res) => markNotificationsSeen(res.data.data || [], user?.id))
+                        .catch(() => {});
+                    }}
                   >
                     <IconBell />
                     {notifyCount > 0 && <span className="badge">{notifyLabel}</span>}
@@ -190,7 +209,18 @@ export default function Layout() {
                           <Link role="menuitem" to="/orders" onClick={() => setUserOpen(false)}>
                             Đơn hàng
                           </Link>
-                          <Link role="menuitem" to="/notifications" onClick={() => setUserOpen(false)}>
+                          <Link
+                            role="menuitem"
+                            to="/notifications"
+                            onClick={() => {
+                              setUserOpen(false);
+                              setNotifyCount(0);
+                              api
+                                .get("/notifications")
+                                .then((res) => markNotificationsSeen(res.data.data || [], user?.id))
+                                .catch(() => {});
+                            }}
+                          >
                             Thông báo
                             {notifyCount > 0 && <em>{notifyLabel}</em>}
                           </Link>

@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.notification.repository;
 
-import gtvt.haitv.ecommerce.notification.domain.Notification;
+import gtvt.haitv.ecommerce.notification.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

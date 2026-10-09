@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8099}
+
+spring:
+  application:
+    name: OPS-CONTROL-PLANE
+  security:
+    user:
+      name: ${OPS_USER:admin}
+      password: ${OPS_PASSWORD:abc123}
+
+ops:
+  repo-root: ${OPS_REPO_ROOT:.}
+  deploy-script: ${OPS_DEPLOY_SCRIPT:scripts/ops-deploy.sh}
+  jobs-dir: ${OPS_JOBS_DIR:data/jobs}
+  cors-origins: ${OPS_CORS_ORIGINS:http://localhost:5199,http://127.0.0.1:5199}
+  catalog-path: ${OPS_CATALOG_PATH:classpath:ops-catalog.yml}
+  docker-network: ${OPS_DOCKER_NETWORK:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    gtvt.haitv.ecommerce.ops: INFO

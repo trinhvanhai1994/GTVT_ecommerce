@@ -1,5 +1,6 @@
 package gtvt.haitv.ecommerce.common.security;
 
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -7,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+@Getter
 public class AuthenticatedUser implements UserDetails {
 
     private final Long userId;
@@ -17,18 +19,6 @@ public class AuthenticatedUser implements UserDetails {
         this.userId = userId;
         this.email = email;
         this.role = role;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getRole() {
-        return role;
     }
 
     @Override

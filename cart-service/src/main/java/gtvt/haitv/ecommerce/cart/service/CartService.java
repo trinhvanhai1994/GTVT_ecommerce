@@ -2,11 +2,13 @@ package gtvt.haitv.ecommerce.cart.service;
 
 import feign.FeignException;
 import gtvt.haitv.ecommerce.cart.client.ProductClient;
-import gtvt.haitv.ecommerce.cart.domain.Cart;
-import gtvt.haitv.ecommerce.cart.domain.CartItem;
+import gtvt.haitv.ecommerce.cart.entity.Cart;
+import gtvt.haitv.ecommerce.cart.entity.CartItem;
 import gtvt.haitv.ecommerce.cart.dto.AddCartItemRequest;
 import gtvt.haitv.ecommerce.cart.dto.CartResponse;
 import gtvt.haitv.ecommerce.cart.repository.CartRepository;
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import org.springframework.http.HttpStatus;
@@ -41,7 +43,7 @@ public class CartService {
         FlowLog f = FlowLog.start("addItem");
         try {
             if (request.getQuantity() == null || request.getQuantity() <= 0) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Quantity must be > 0");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.QUANTITY_MUST_BE_POSITIVE);
             }
             f.step("product " + request.getProductId());
             ensureProductExists(request.getProductId());
@@ -75,7 +77,7 @@ public class CartService {
         FlowLog f = FlowLog.start("updateItem");
         try {
             if (quantity <= 0) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Quantity must be > 0");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.QUANTITY_MUST_BE_POSITIVE);
             }
             Cart cart = getOrCreate(userId);
             CartItem item = itemOf(cart, itemId);
@@ -116,12 +118,12 @@ public class CartService {
         try {
             var response = productClient.getProduct(productId);
             if (response == null || response.getData() == null) {
-                throw new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product not found");
+                throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
             }
         } catch (FeignException.NotFound ex) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product not found");
+            throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
         } catch (FeignException ex) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "PRODUCT_SERVICE_ERROR", "Cannot validate product");
+            throw new ApiException(HttpStatus.BAD_GATEWAY, ErrorConstant.PRODUCT_SERVICE_ERROR, MessageConstant.PRODUCT_SERVICE_ERROR);
         }
     }
 
@@ -137,7 +139,7 @@ public class CartService {
         return cart.getItems().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "Cart item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.CART_ITEM_NOT_FOUND, MessageConstant.CART_ITEM_NOT_FOUND));
     }
 
     private CartResponse toResponse(Cart cart) {

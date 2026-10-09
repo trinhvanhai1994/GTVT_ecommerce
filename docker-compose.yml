@@ -83,14 +83,6 @@ services:
       - "8088:8088"
     environment:
       SERVER_PORT: 8088
-      FLOW_GATEWAY_URI: http://gateway:8080
-      FLOW_AUTH_URI: http://auth:8081
-      FLOW_PRODUCT_URI: http://product:8082
-      FLOW_CART_URI: http://cart:8083
-      FLOW_INVENTORY_URI: http://inventory:8084
-      FLOW_ORDER_URI: http://order:8085
-      FLOW_PAYMENT_URI: http://payment:8086
-      FLOW_NOTIFICATION_URI: http://notification:8087
     depends_on:
       - eureka
     restart: unless-stopped
@@ -291,6 +283,39 @@ services:
       - "5173:80"
     depends_on:
       - gateway
+    restart: unless-stopped
+
+  ops-api:
+    build:
+      context: ./ops-control-plane
+      dockerfile: Dockerfile
+    image: gtvt-ecommerce-ops-api
+    container_name: ecommerce-ops-api
+    ports:
+      - "8099:8099"
+    environment:
+      SERVER_PORT: 8099
+      OPS_REPO_ROOT: /workspace
+      OPS_DEPLOY_SCRIPT: scripts/ops-deploy.sh
+      OPS_JOBS_DIR: data/jobs
+      OPS_DOCKER_NETWORK: "true"
+      OPS_CORS_ORIGINS: http://localhost:5199,http://127.0.0.1:5199
+      OPS_USER: ${OPS_USER:-admin}
+      OPS_PASSWORD: ${OPS_PASSWORD:-abc123}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace
+    working_dir: /workspace
+    restart: unless-stopped
+
+  ops-ui:
+    build: ./ops-console
+    image: gtvt-ecommerce-ops-ui
+    container_name: ecommerce-ops-ui
+    ports:
+      - "5199:80"
+    depends_on:
+      - ops-api
     restart: unless-stopped
 
 volumes:

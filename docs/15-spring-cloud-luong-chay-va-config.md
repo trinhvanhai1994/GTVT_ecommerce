@@ -4,7 +4,7 @@
 **Phạm vi:** runtime hiện tại (Spring Boot 3.4.5, Spring Cloud 2024.0.1). Không mô tả “lý thuyết textbook” nếu khác với code.
 
 Tài liệu kiến trúc tổng quát: `docs/06-architecture.md`.  
-Chạy local: `README.md`, `scripts/deploy.ps1`, `docs/12-deployment.md`.
+Chạy local: `README.md`, `scripts/ops-deploy.sh`, `docs/12-deployment.md`.
 
 ---
 
@@ -16,7 +16,7 @@ Hệ thống là **BFF + API Gateway + N microservice + 1 DB/service + messaging
 |-----|------------|--------------|
 | Client | React `:5173` / `:5174` | Chỉ gọi Gateway `:8080`. Không biết port service. |
 | Edge | `gateway` (Spring Cloud Gateway, WebFlux) | CORS, path routing, correlation id. **Không** validate JWT. |
-| Discovery / ops | `eureka-server` `:8761`, `admin-server` `:8088` | Đăng ký instance, health, UI `/flow`. |
+| Discovery / ops | `eureka-server` `:8761`, `admin-server` `:8088`, Ops `:5199/:8099` | Đăng ký instance, SBA health, Ops Console logs/deploy. |
 | Domain | auth, product, cart, inventory, order, payment, notification | Mỗi service Spring MVC + JPA + JWT (module `common`). |
 | Sync hop | OpenFeign | Order/Cart gọi service khác qua HTTP nội bộ. |
 | Async hop | RabbitMQ | Order publish sau commit; Notification consume. |
@@ -213,7 +213,7 @@ Admin: `hasRole("ADMIN")` trên `/api/admin/**` (auth users, order admin, …).
 - Actuator: `health,info,logfile,loggers` (+ Gateway `gateway`).
 - Log file `logs/${spring.application.name}.log`, pattern MDC `svc`, `cid`.
 - Servlet: `FlowHttpFilter` — nhận `X-Correlation-Id`, log HTTP.
-- Admin `:8088` — Spring Boot Admin; UI `/flow` gom log theo `cid`.
+- Admin `:8088` — Spring Boot Admin. Ops Console `:5199` — status/log/deploy.
 - Admin login HTTP basic user `admin` / `admin` (yml).
 
 ---
@@ -312,7 +312,7 @@ Payment mock: `simulatePaymentFailure` trên `CheckoutRequest`.
 2. Service servlet `FlowHttpFilter` → MDC `cid`.
 3. Feign interceptor forward header.
 4. Publisher gán `event.correlationId`.
-5. `/flow` và `logs/*.log` lọc cùng 8 ký tự.
+5. Ops Console Logs (hoặc `logs/*.log`) lọc cùng 8 ký tự `cid`.
 
 ---
 
@@ -356,7 +356,7 @@ Layer trong mỗi service: `controller → service → repository`. DTO ra API; 
                             |
                      :8087 Notification
 
-      :8761 Eureka     :8088 Admin/flow     :5432 Postgres
+      :8761 Eureka     :8088 Admin     :5199 Ops     :5432 Postgres
 ```
 
 Nếu checkout 502: xem Order log `payment` + Payment có UP không.  

@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.auth.service;
 
-import gtvt.haitv.ecommerce.auth.domain.User;
+import gtvt.haitv.ecommerce.auth.entity.User;
 import gtvt.haitv.ecommerce.auth.dto.ForgotPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginResponse;
@@ -8,6 +8,10 @@ import gtvt.haitv.ecommerce.auth.dto.RegisterRequest;
 import gtvt.haitv.ecommerce.auth.dto.ResetPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.UserResponse;
 import gtvt.haitv.ecommerce.auth.repository.UserRepository;
+import gtvt.haitv.ecommerce.common.constant.AppConstant;
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
+import gtvt.haitv.ecommerce.common.constant.NumberConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import gtvt.haitv.ecommerce.common.mail.EmailService;
@@ -47,18 +51,18 @@ public class AuthService {
         try {
             f.step("check email");
             if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-                throw new ApiException(HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS", "Email already exists");
+                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.EMAIL_ALREADY_EXISTS, MessageConstant.EMAIL_ALREADY_EXISTS);
             }
             User user = new User();
             user.setEmail(request.getEmail().trim().toLowerCase());
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setFullName(request.getFullName());
-            user.setRole("CUSTOMER");
-            user.setStatus("ACTIVE");
+            user.setRole(AppConstant.ROLE_CUSTOMER);
+            user.setStatus(AppConstant.STATUS_ACTIVE);
             User saved = userRepository.save(user);
             emailService.send(
                     saved.getEmail(),
-                    "Chào mừng đến Nava",
+                    MessageConstant.EMAIL_WELCOME_SUBJECT,
                     "Xin chào " + saved.getFullName() + ",\n\n"
                             + "Tài khoản của bạn đã được tạo thành công với email " + saved.getEmail() + ".\n"
                             + "Bạn có thể đăng nhập tại: " + emailService.storeUrl() + "/login\n\n"
@@ -77,10 +81,10 @@ public class AuthService {
         try {
             f.step("load user");
             User user = userRepository.findByEmailIgnoreCase(request.getEmail())
-                    .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid credentials"));
+                    .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, ErrorConstant.INVALID_CREDENTIALS, MessageConstant.INVALID_CREDENTIALS));
             f.step("verify");
-            if (!"ACTIVE".equals(user.getStatus()) || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid credentials");
+            if (!AppConstant.STATUS_ACTIVE.equals(user.getStatus()) || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+                throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorConstant.INVALID_CREDENTIALS, MessageConstant.INVALID_CREDENTIALS);
             }
             String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
             f.end("userId=" + user.getId());
@@ -99,14 +103,14 @@ public class AuthService {
                 String rawToken = UUID.randomUUID().toString().replace("-", "")
                         + UUID.randomUUID().toString().replace("-", "");
                 user.setPasswordResetToken(sha256(rawToken));
-                user.setPasswordResetExpires(Instant.now().plus(30, ChronoUnit.MINUTES));
+                user.setPasswordResetExpires(Instant.now().plus(NumberConstant.RESET_TOKEN_TTL_MINUTES, ChronoUnit.MINUTES));
                 String link = emailService.storeUrl() + "/reset-password?token=" + rawToken;
                 emailService.send(
                         user.getEmail(),
-                        "Đặt lại mật khẩu Nava",
+                        MessageConstant.EMAIL_RESET_SUBJECT,
                         "Xin chào " + user.getFullName() + ",\n\n"
                                 + "Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu.\n"
-                                + "Mở liên kết sau trong vòng 30 phút:\n" + link + "\n\n"
+                                + "Mở liên kết sau trong vòng " + NumberConstant.RESET_TOKEN_TTL_MINUTES + " phút:\n" + link + "\n\n"
                                 + "Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n"
                                 + "Trân trọng,\nNava");
                 f.step("token issued userId=" + user.getId());
@@ -124,11 +128,11 @@ public class AuthService {
         try {
             String hash = sha256(request.getToken().trim());
             User user = userRepository.findByPasswordResetToken(hash)
-                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "Invalid or expired reset token"));
+                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.INVALID_RESET_TOKEN, MessageConstant.INVALID_RESET_TOKEN));
             if (user.getPasswordResetExpires() == null || user.getPasswordResetExpires().isBefore(Instant.now())) {
                 user.setPasswordResetToken(null);
                 user.setPasswordResetExpires(null);
-                throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "Invalid or expired reset token");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.INVALID_RESET_TOKEN, MessageConstant.INVALID_RESET_TOKEN);
             }
             user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
             user.setPasswordResetToken(null);
@@ -191,7 +195,7 @@ public class AuthService {
 
     private User getUser(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.USER_NOT_FOUND, MessageConstant.USER_NOT_FOUND));
     }
 
     private static String sha256(String raw) {

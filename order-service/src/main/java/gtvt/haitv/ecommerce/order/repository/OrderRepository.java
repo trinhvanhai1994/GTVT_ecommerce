@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.order.repository;
 
-import gtvt.haitv.ecommerce.order.domain.Order;
+import gtvt.haitv.ecommerce.order.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

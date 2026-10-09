@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.auth.config;
 
-import gtvt.haitv.ecommerce.auth.domain.User;
+import gtvt.haitv.ecommerce.auth.entity.User;
 import gtvt.haitv.ecommerce.auth.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

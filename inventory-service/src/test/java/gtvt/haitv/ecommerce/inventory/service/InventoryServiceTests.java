@@ -1,7 +1,7 @@
 package gtvt.haitv.ecommerce.inventory.service;
 
 import gtvt.haitv.ecommerce.common.exception.ApiException;
-import gtvt.haitv.ecommerce.inventory.domain.Inventory;
+import gtvt.haitv.ecommerce.inventory.entity.Inventory;
 import gtvt.haitv.ecommerce.inventory.dto.StockItemsRequest;
 import gtvt.haitv.ecommerce.inventory.repository.InventoryRepository;
 import org.junit.jupiter.api.BeforeEach;

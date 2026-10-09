@@ -1,11 +1,18 @@
 package gtvt.haitv.ecommerce.order.dto;
 
-import gtvt.haitv.ecommerce.order.domain.Order;
-import gtvt.haitv.ecommerce.order.domain.OrderItem;
+import gtvt.haitv.ecommerce.order.entity.Order;
+import gtvt.haitv.ecommerce.order.entity.OrderItem;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class OrderResponse {
     private Long id;
     private Long userId;
@@ -34,26 +41,16 @@ public class OrderResponse {
         return r;
     }
 
-    public void setPayment(PaymentSnapshot payment) { this.payment = payment; }
-
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public String getStatus() { return status; }
-    public BigDecimal getTotalAmount() { return totalAmount; }
-    public String getCustomerEmail() { return customerEmail; }
-    public String getShippingName() { return shippingName; }
-    public String getShippingPhone() { return shippingPhone; }
-    public String getShippingAddress() { return shippingAddress; }
-    public String getPaymentMethod() { return paymentMethod; }
-    public List<Item> getItems() { return items; }
-    public PaymentSnapshot getPayment() { return payment; }
-
+    @Getter
+    @Setter
+    @NoArgsConstructor
     public static class Item {
         private Long productId;
         private String productName;
         private int quantity;
         private BigDecimal unitPrice;
         private BigDecimal subtotal;
+
         public static Item from(OrderItem i) {
             Item r = new Item();
             r.productId = i.getProductId();
@@ -63,18 +60,12 @@ public class OrderResponse {
             r.subtotal = i.getSubtotal();
             return r;
         }
-        public Long getProductId() { return productId; }
-        public String getProductName() { return productName; }
-        public int getQuantity() { return quantity; }
-        public BigDecimal getUnitPrice() { return unitPrice; }
-        public BigDecimal getSubtotal() { return subtotal; }
     }
 
+    @Getter
+    @AllArgsConstructor
     public static class PaymentSnapshot {
         private Long id;
         private String status;
-        public PaymentSnapshot(Long id, String status) { this.id = id; this.status = status; }
-        public Long getId() { return id; }
-        public String getStatus() { return status; }
     }
 }

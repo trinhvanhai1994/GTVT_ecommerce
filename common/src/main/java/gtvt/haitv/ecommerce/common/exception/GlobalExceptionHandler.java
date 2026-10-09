@@ -1,6 +1,8 @@
 package gtvt.haitv.ecommerce.common.exception;
 
 import gtvt.haitv.ecommerce.common.api.ErrorResponse;
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -27,28 +29,34 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
-                .map(err -> err.getField() + " " + err.getDefaultMessage())
-                .orElse("Validation failed");
+                .map(err -> {
+                    String detail = err.getDefaultMessage();
+                    if (detail == null || detail.isBlank()) {
+                        return MessageConstant.VALIDATION_FAILED;
+                    }
+                    return detail;
+                })
+                .orElse(MessageConstant.VALIDATION_FAILED);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(new ErrorResponse(message, "VALIDATION_ERROR"));
+                .body(new ErrorResponse(message, ErrorConstant.VALIDATION_ERROR));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponse("Forbidden", "FORBIDDEN"));
+                .body(new ErrorResponse(MessageConstant.FORBIDDEN, ErrorConstant.FORBIDDEN));
     }
 
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
     public ResponseEntity<ErrorResponse> handleAuth(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse(ex.getMessage(), "UNAUTHORIZED"));
+                .body(new ErrorResponse(MessageConstant.UNAUTHORIZED, ErrorConstant.UNAUTHORIZED));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleOther(Exception ex) {
         log.error("Unhandled error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Internal server error", "INTERNAL_ERROR"));
+                .body(new ErrorResponse(MessageConstant.INTERNAL_ERROR, ErrorConstant.INTERNAL_ERROR));
     }
 }

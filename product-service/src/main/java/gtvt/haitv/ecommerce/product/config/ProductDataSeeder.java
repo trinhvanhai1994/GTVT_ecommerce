@@ -1,7 +1,7 @@
 package gtvt.haitv.ecommerce.product.config;
 
-import gtvt.haitv.ecommerce.product.domain.Category;
-import gtvt.haitv.ecommerce.product.domain.Product;
+import gtvt.haitv.ecommerce.product.entity.Category;
+import gtvt.haitv.ecommerce.product.entity.Product;
 import gtvt.haitv.ecommerce.product.repository.CategoryRepository;
 import gtvt.haitv.ecommerce.product.repository.ProductRepository;
 import org.springframework.boot.CommandLineRunner;

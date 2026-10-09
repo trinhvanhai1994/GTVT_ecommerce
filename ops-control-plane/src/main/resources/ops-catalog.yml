@@ -1,0 +1,163 @@
+services:
+  - id: postgres
+    displayName: PostgreSQL
+    group: infra
+    composeService: postgres
+    containerName: ecommerce-postgres
+    port: 5432
+    health: docker
+    logs: docker
+  - id: rabbitmq
+    displayName: RabbitMQ
+    group: infra
+    composeService: rabbitmq
+    containerName: ecommerce-rabbitmq
+    port: 15672
+    health: docker
+    logs: docker
+  - id: eureka
+    displayName: Eureka
+    group: infra
+    composeService: eureka
+    containerName: ecommerce-eureka
+    mavenModule: eureka-server
+    port: 8761
+    healthUrl: http://eureka:8761/actuator/health
+    healthUrlHost: http://localhost:8761/actuator/health
+    logs: actuator
+    logfileUrl: http://eureka:8761/actuator/logfile
+    logfileUrlHost: http://localhost:8761/actuator/logfile
+  - id: admin
+    displayName: Spring Boot Admin
+    group: infra
+    composeService: admin
+    containerName: ecommerce-admin
+    mavenModule: admin-server
+    port: 8088
+    healthUrl: http://admin:8088/actuator/health
+    healthUrlHost: http://localhost:8088/actuator/health
+    logs: docker
+  - id: gateway
+    displayName: API Gateway
+    group: app
+    composeService: gateway
+    containerName: ecommerce-gateway
+    mavenModule: gateway
+    port: 8080
+    healthUrl: http://gateway:8080/actuator/health
+    healthUrlHost: http://localhost:8080/actuator/health
+    logs: actuator
+    logfileUrl: http://gateway:8080/actuator/logfile
+    logfileUrlHost: http://localhost:8080/actuator/logfile
+  - id: auth
+    displayName: Auth Service
+    group: app
+    composeService: auth
+    containerName: ecommerce-auth
+    mavenModule: auth-service
+    port: 8081
+    healthUrl: http://auth:8081/actuator/health
+    healthUrlHost: http://localhost:8081/actuator/health
+    logs: actuator
+    logfileUrl: http://auth:8081/actuator/logfile
+    logfileUrlHost: http://localhost:8081/actuator/logfile
+  - id: product
+    displayName: Product Service
+    group: app
+    composeService: product
+    containerName: ecommerce-product
+    mavenModule: product-service
+    port: 8082
+    healthUrl: http://product:8082/actuator/health
+    healthUrlHost: http://localhost:8082/actuator/health
+    logs: actuator
+    logfileUrl: http://product:8082/actuator/logfile
+    logfileUrlHost: http://localhost:8082/actuator/logfile
+  - id: cart
+    displayName: Cart Service
+    group: app
+    composeService: cart
+    containerName: ecommerce-cart
+    mavenModule: cart-service
+    port: 8083
+    healthUrl: http://cart:8083/actuator/health
+    healthUrlHost: http://localhost:8083/actuator/health
+    logs: actuator
+    logfileUrl: http://cart:8083/actuator/logfile
+    logfileUrlHost: http://localhost:8083/actuator/logfile
+  - id: inventory
+    displayName: Inventory Service
+    group: app
+    composeService: inventory
+    containerName: ecommerce-inventory
+    mavenModule: inventory-service
+    port: 8084
+    healthUrl: http://inventory:8084/actuator/health
+    healthUrlHost: http://localhost:8084/actuator/health
+    logs: actuator
+    logfileUrl: http://inventory:8084/actuator/logfile
+    logfileUrlHost: http://localhost:8084/actuator/logfile
+  - id: order
+    displayName: Order Service
+    group: app
+    composeService: order
+    containerName: ecommerce-order
+    mavenModule: order-service
+    port: 8085
+    healthUrl: http://order:8085/actuator/health
+    healthUrlHost: http://localhost:8085/actuator/health
+    logs: actuator
+    logfileUrl: http://order:8085/actuator/logfile
+    logfileUrlHost: http://localhost:8085/actuator/logfile
+  - id: payment
+    displayName: Payment Service
+    group: app
+    composeService: payment
+    containerName: ecommerce-payment
+    mavenModule: payment-service
+    port: 8086
+    healthUrl: http://payment:8086/actuator/health
+    healthUrlHost: http://localhost:8086/actuator/health
+    logs: actuator
+    logfileUrl: http://payment:8086/actuator/logfile
+    logfileUrlHost: http://localhost:8086/actuator/logfile
+  - id: notification
+    displayName: Notification Service
+    group: app
+    composeService: notification
+    containerName: ecommerce-notification
+    mavenModule: notification-service
+    port: 8087
+    healthUrl: http://notification:8087/actuator/health
+    healthUrlHost: http://localhost:8087/actuator/health
+    logs: actuator
+    logfileUrl: http://notification:8087/actuator/logfile
+    logfileUrlHost: http://localhost:8087/actuator/logfile
+  - id: frontend
+    displayName: Storefront
+    group: ui
+    composeService: frontend
+    containerName: ecommerce-frontend
+    port: 5173
+    healthUrl: http://frontend/
+    healthUrlHost: http://localhost:5173/
+    logs: docker
+  - id: ops-api
+    displayName: Ops API
+    group: ops
+    composeService: ops-api
+    containerName: ecommerce-ops-api
+    mavenModule: ops-control-plane
+    port: 8099
+    healthUrl: http://ops-api:8099/actuator/health
+    healthUrlHost: http://localhost:8099/actuator/health
+    logs: docker
+  - id: ops-ui
+    displayName: Ops Console
+    group: ops
+    composeService: ops-ui
+    containerName: ecommerce-ops-ui
+    port: 5199
+    healthUrl: http://ops-ui/
+    healthUrlHost: http://localhost:5199/
+    logs: docker

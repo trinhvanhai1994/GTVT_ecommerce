@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.auth.repository;
 
-import gtvt.haitv.ecommerce.auth.domain.User;
+import gtvt.haitv.ecommerce.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

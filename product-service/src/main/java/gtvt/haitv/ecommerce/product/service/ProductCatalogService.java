@@ -1,9 +1,11 @@
 package gtvt.haitv.ecommerce.product.service;
 
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
-import gtvt.haitv.ecommerce.product.domain.Category;
-import gtvt.haitv.ecommerce.product.domain.Product;
+import gtvt.haitv.ecommerce.product.entity.Category;
+import gtvt.haitv.ecommerce.product.entity.Product;
 import gtvt.haitv.ecommerce.product.dto.CategoryRequest;
 import gtvt.haitv.ecommerce.product.dto.CategoryResponse;
 import gtvt.haitv.ecommerce.product.dto.PageResponse;
@@ -59,7 +61,7 @@ public class ProductCatalogService {
         FlowLog f = FlowLog.start("createCategory");
         try {
             if (categoryRepository.existsByNameIgnoreCase(request.getName())) {
-                throw new ApiException(HttpStatus.CONFLICT, "CATEGORY_EXISTS", "Category already exists");
+                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.CATEGORY_EXISTS, MessageConstant.CATEGORY_EXISTS);
             }
             Category c = new Category();
             c.setName(request.getName());
@@ -197,11 +199,11 @@ public class ProductCatalogService {
 
     private Category category(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "Category not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.CATEGORY_NOT_FOUND, MessageConstant.CATEGORY_NOT_FOUND));
     }
 
     private Product product(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND));
     }
 }

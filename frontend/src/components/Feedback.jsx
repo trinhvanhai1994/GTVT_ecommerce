@@ -1,3 +1,5 @@
+import { MessageConstant } from "../constants";
+
 export function Loading({ text = "Đang tải..." }) {
   return (
     <div className="skeleton-wrap" role="status">
@@ -8,15 +10,14 @@ export function Loading({ text = "Đang tải..." }) {
   );
 }
 
+/** Chỉ hiển thị message người dùng — không hiện mã lỗi hệ thống. */
 export function ErrorBanner({ error }) {
   if (!error) return null;
+  const text = error.message || MessageConstant.UNKNOWN_ERROR;
   return (
     <div className="banner error" role="alert">
-      <strong>Có lỗi xảy ra.</strong>
-      <span>
-        {error.message}
-        {error.code ? ` · ${error.code}` : ""}
-      </span>
+      <strong>{MessageConstant.ERROR_OCCURRED}</strong>
+      <span>{text}</span>
     </div>
   );
 }

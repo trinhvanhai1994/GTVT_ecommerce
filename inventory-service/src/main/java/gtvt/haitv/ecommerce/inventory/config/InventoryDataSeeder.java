@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.inventory.config;
 
-import gtvt.haitv.ecommerce.inventory.domain.Inventory;
+import gtvt.haitv.ecommerce.inventory.entity.Inventory;
 import gtvt.haitv.ecommerce.inventory.repository.InventoryRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

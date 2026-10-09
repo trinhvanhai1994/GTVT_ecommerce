@@ -1,9 +1,11 @@
 package gtvt.haitv.ecommerce.payment.service;
 
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import gtvt.haitv.ecommerce.common.security.SecurityUtils;
-import gtvt.haitv.ecommerce.payment.domain.Payment;
+import gtvt.haitv.ecommerce.payment.entity.Payment;
 import gtvt.haitv.ecommerce.payment.dto.CreatePaymentRequest;
 import gtvt.haitv.ecommerce.payment.dto.PaymentResponse;
 import gtvt.haitv.ecommerce.payment.repository.PaymentRepository;
@@ -46,7 +48,7 @@ public class PaymentService {
         FlowLog f = FlowLog.start("getPayment");
         try {
             Payment payment = paymentRepository.findById(id)
-                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment not found"));
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PAYMENT_NOT_FOUND, MessageConstant.PAYMENT_NOT_FOUND));
             SecurityUtils.requireOwnerOrAdmin(payment.getUserId());
             f.end("id=" + id + " " + payment.getStatus());
             return PaymentResponse.from(payment);

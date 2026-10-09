@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ErrorBanner } from "../components/Feedback";
+import { MessageConstant, NumberConstant } from "../constants";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -14,8 +15,8 @@ export default function RegisterPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (form.password.length < 8) {
-      setError({ message: "Mật khẩu tối thiểu 8 ký tự" });
+    if (form.password.length < NumberConstant.PASSWORD_MIN_LENGTH) {
+      setError({ message: MessageConstant.PASSWORD_MIN_LENGTH });
       return;
     }
     setLoading(true);
@@ -70,9 +71,9 @@ export default function RegisterPage() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
-            minLength={8}
+            minLength={NumberConstant.PASSWORD_MIN_LENGTH}
             autoComplete="new-password"
-            placeholder="Tối thiểu 8 ký tự"
+            placeholder={`Tối thiểu ${NumberConstant.PASSWORD_MIN_LENGTH} ký tự`}
           />
         </label>
         <button className="btn btn-lg" disabled={loading}>

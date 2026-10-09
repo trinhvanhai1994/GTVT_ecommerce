@@ -1,5 +1,8 @@
 package gtvt.haitv.ecommerce.common.security;
 
+import gtvt.haitv.ecommerce.common.constant.AppConstant;
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -13,7 +16,7 @@ public final class SecurityUtils {
     public static AuthenticatedUser currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AuthenticatedUser user)) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorConstant.UNAUTHORIZED, MessageConstant.UNAUTHORIZED);
         }
         return user;
     }
@@ -23,13 +26,13 @@ public final class SecurityUtils {
     }
 
     public static boolean isAdmin() {
-        return "ADMIN".equals(currentUser().getRole());
+        return AppConstant.ROLE_ADMIN.equals(currentUser().getRole());
     }
 
     public static void requireOwnerOrAdmin(Long resourceUserId) {
         AuthenticatedUser user = currentUser();
-        if (!"ADMIN".equals(user.getRole()) && !user.getUserId().equals(resourceUserId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access denied");
+        if (!AppConstant.ROLE_ADMIN.equals(user.getRole()) && !user.getUserId().equals(resourceUserId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
         }
     }
 }

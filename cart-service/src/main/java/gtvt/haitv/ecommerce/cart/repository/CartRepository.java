@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.cart.repository;
 
-import gtvt.haitv.ecommerce.cart.domain.Cart;
+import gtvt.haitv.ecommerce.cart.entity.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

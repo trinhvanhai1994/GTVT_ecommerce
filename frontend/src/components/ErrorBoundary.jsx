@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { MessageConstant } from "../constants";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -6,8 +7,8 @@ export default class ErrorBoundary extends Component {
     this.state = { message: null };
   }
 
-  static getDerivedStateFromError(error) {
-    return { message: error?.message || "Unknown error" };
+  static getDerivedStateFromError() {
+    return { message: MessageConstant.UNKNOWN_ERROR };
   }
 
   componentDidUpdate(prevProps) {

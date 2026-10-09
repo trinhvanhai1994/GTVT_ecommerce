@@ -5,11 +5,13 @@ import { ErrorBanner, Loading } from "../components/Feedback";
 import OrderTimeline from "../components/OrderTimeline";
 import { money, STATUS_LABEL } from "../utils/catalog";
 import { useAuth } from "../context/AuthContext";
+import { useDialog } from "../context/DialogContext";
 
 export default function OrderDetailPage() {
   const { id } = useParams();
   const location = useLocation();
   const { user } = useAuth();
+  const { confirm, toast } = useDialog();
   const [order, setOrder] = useState(location.state?.result || null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(!order);
@@ -32,14 +34,23 @@ export default function OrderDetailPage() {
   }, [id]);
 
   const cancel = async () => {
-    if (!window.confirm("Hủy đơn này? Chúng tôi sẽ gửi email xác nhận hủy.")) return;
+    const ok = await confirm({
+      title: "Huỷ đơn hàng?",
+      message: "Chúng tôi sẽ gửi email xác nhận huỷ tới địa chỉ trên đơn.",
+      confirmLabel: "Huỷ đơn",
+      cancelLabel: "Giữ đơn",
+      danger: true
+    });
+    if (!ok) return;
     setCancelling(true);
     setError(null);
     try {
       const { data } = await api.post(`/orders/${id}/cancel`);
       setOrder(data.data);
+      toast({ title: "Đã huỷ đơn", message: `Đơn #${id} đã được huỷ.`, variant: "ok" });
     } catch (err) {
       setError(err);
+      toast({ title: "Không huỷ được", message: err.message || "Thử lại sau.", variant: "error" });
     } finally {
       setCancelling(false);
     }

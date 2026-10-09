@@ -4,7 +4,7 @@ import gtvt.haitv.ecommerce.common.event.OrderEvent;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import gtvt.haitv.ecommerce.common.mail.EmailService;
 import gtvt.haitv.ecommerce.common.mail.MailProperties;
-import gtvt.haitv.ecommerce.notification.domain.Notification;
+import gtvt.haitv.ecommerce.notification.entity.Notification;
 import gtvt.haitv.ecommerce.notification.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

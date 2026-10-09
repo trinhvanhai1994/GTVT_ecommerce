@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { MessageConstant } from "../constants";
 import api from "../services/api";
 import { ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
@@ -59,7 +60,9 @@ export default function ProductDetailPage() {
   };
 
   if (loading) return <Loading />;
-  if (!product) return <ErrorBanner error={error || { message: "Không tìm thấy sản phẩm" }} />;
+  if (!product) {
+    return <ErrorBanner error={error || { message: MessageConstant.PRODUCT_NOT_FOUND }} />;
+  }
 
   return (
     <section className="detail-layout">

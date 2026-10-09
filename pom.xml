@@ -23,6 +23,7 @@
         <module>order-service</module>
         <module>payment-service</module>
         <module>notification-service</module>
+        <module>ops-control-plane</module>
     </modules>
 
     <properties>
@@ -33,7 +34,17 @@
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
         <spring-boot.version>3.4.5</spring-boot.version>
         <spring-cloud.version>2024.0.1</spring-cloud.version>
+        <lombok.version>1.18.38</lombok.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -77,6 +88,13 @@
                     <configuration>
                         <release>${maven.compiler.release}</release>
                         <parameters>true</parameters>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
             </plugins>

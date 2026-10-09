@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.product.repository;
 
-import gtvt.haitv.ecommerce.product.domain.Category;
+import gtvt.haitv.ecommerce.product.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

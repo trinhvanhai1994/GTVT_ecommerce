@@ -3,6 +3,7 @@ import Layout from "./components/Layout.jsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+import { DialogProvider } from "./context/DialogContext.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
@@ -22,6 +23,7 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
+      <DialogProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
@@ -89,6 +91,7 @@ export default function App() {
           />
         </Route>
       </Routes>
+      </DialogProvider>
       </CartProvider>
     </AuthProvider>
   );

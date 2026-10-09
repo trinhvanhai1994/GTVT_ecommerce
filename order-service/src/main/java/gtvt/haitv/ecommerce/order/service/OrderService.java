@@ -2,6 +2,9 @@ package gtvt.haitv.ecommerce.order.service;
 
 import feign.FeignException;
 import gtvt.haitv.ecommerce.common.event.OrderEvent;
+import gtvt.haitv.ecommerce.common.constant.AppConstant;
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import gtvt.haitv.ecommerce.common.security.SecurityUtils;
@@ -9,8 +12,8 @@ import gtvt.haitv.ecommerce.order.client.CartClient;
 import gtvt.haitv.ecommerce.order.client.InventoryClient;
 import gtvt.haitv.ecommerce.order.client.PaymentClient;
 import gtvt.haitv.ecommerce.order.client.ProductClient;
-import gtvt.haitv.ecommerce.order.domain.Order;
-import gtvt.haitv.ecommerce.order.domain.OrderItem;
+import gtvt.haitv.ecommerce.order.entity.Order;
+import gtvt.haitv.ecommerce.order.entity.OrderItem;
 import gtvt.haitv.ecommerce.order.dto.CheckoutRequest;
 import gtvt.haitv.ecommerce.order.dto.OrderResponse;
 import gtvt.haitv.ecommerce.order.messaging.OrderEventPublisher;
@@ -26,9 +29,10 @@ import java.util.Set;
 @Service
 public class OrderService {
 
-    private static final Set<String> CANCELLABLE = Set.of("PENDING", "PAYMENT_PENDING", "CONFIRMED");
+    private static final Set<String> CANCELLABLE = Set.of(AppConstant.ORDER_PENDING, AppConstant.ORDER_PAYMENT_PENDING, AppConstant.ORDER_CONFIRMED);
     private static final Set<String> ADMIN_STATUSES = Set.of(
-            "PENDING", "PAYMENT_PENDING", "CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED", "CANCELLED", "PAYMENT_FAILED");
+            AppConstant.ORDER_PENDING, AppConstant.ORDER_PAYMENT_PENDING, AppConstant.ORDER_CONFIRMED, AppConstant.ORDER_PROCESSING,
+            AppConstant.ORDER_SHIPPING, AppConstant.ORDER_DELIVERED, AppConstant.ORDER_CANCELLED, AppConstant.ORDER_PAYMENT_FAILED);
 
     private final OrderRepository orderRepository;
     private final CartClient cartClient;
@@ -54,14 +58,14 @@ public class OrderService {
             f.step("cart");
             CartClient.RemoteCart cart = cartClient.getCart(userId).getData();
             if (cart == null || cart.getItems() == null || cart.getItems().isEmpty()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "CART_EMPTY", "Cart is empty");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.CART_EMPTY, MessageConstant.CART_EMPTY);
             }
             f.step("items=" + cart.getItems().size());
 
             Order order = new Order();
             order.setUserId(userId);
             order.setCustomerEmail(customerEmail);
-            order.setStatus("PAYMENT_PENDING");
+            order.setStatus(AppConstant.ORDER_PAYMENT_PENDING);
             order.setShippingName(request.getShippingName());
             order.setShippingPhone(request.getShippingPhone());
             order.setShippingAddress(request.getShippingAddress());
@@ -71,8 +75,8 @@ public class OrderService {
 
             for (CartClient.RemoteItem cartItem : cart.getItems()) {
                 ProductClient.RemoteProduct product = productClient.getProduct(cartItem.getProductId()).getData();
-                if (product == null || !"ACTIVE".equals(product.getStatus())) {
-                    throw new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product not found");
+                if (product == null || !AppConstant.STATUS_ACTIVE.equals(product.getStatus())) {
+                    throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
                 }
                 OrderItem item = new OrderItem();
                 item.setOrder(order);
@@ -90,7 +94,7 @@ public class OrderService {
 
             InventoryClient.CheckResponse check = inventoryClient.check(stockReq).getData();
             if (check == null || !check.isAvailable()) {
-                throw new ApiException(HttpStatus.CONFLICT, "INSUFFICIENT_STOCK", "Not enough stock");
+                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.INSUFFICIENT_STOCK, MessageConstant.INSUFFICIENT_STOCK);
             }
             f.step("stock ok");
 
@@ -113,7 +117,7 @@ public class OrderService {
             } catch (FeignException ex) {
                 compensate(order, stockReq, null);
                 f.fail("PAYMENT_SERVICE_ERROR");
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "PAYMENT_SERVICE_ERROR", "Payment service unavailable");
+                throw new ApiException(HttpStatus.BAD_GATEWAY, ErrorConstant.PAYMENT_SERVICE_ERROR, MessageConstant.PAYMENT_SERVICE_ERROR);
             }
 
             if (payment != null && "SUCCESS".equals(payment.getStatus())) {
@@ -138,7 +142,7 @@ public class OrderService {
             f.end("PAYMENT_FAILED orderId=" + order.getId());
             return response;
         } catch (RuntimeException e) {
-            if (!(e instanceof ApiException api && "PAYMENT_SERVICE_ERROR".equals(api.getCode()))) {
+            if (!(e instanceof ApiException api && ErrorConstant.PAYMENT_SERVICE_ERROR.equals(api.getCode()))) {
                 f.fail(e);
             }
             throw e;
@@ -151,7 +155,7 @@ public class OrderService {
         } catch (Exception ex) {
             FlowLog.start("compensate").fail("release " + order.getId());
         }
-        order.setStatus("PAYMENT_FAILED");
+        order.setStatus(AppConstant.ORDER_PAYMENT_FAILED);
         publish(order, OrderEvent.PAYMENT_FAILED, "Payment failed",
                 "Payment failed for order #" + order.getId());
     }
@@ -184,10 +188,10 @@ public class OrderService {
         try {
             Order order = order(id);
             if (!order.getUserId().equals(userId)) {
-                throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access denied");
+                throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
             }
             if (!CANCELLABLE.contains(order.getStatus())) {
-                throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "Order cannot be cancelled");
+                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.ORDER_NOT_CANCELLABLE, MessageConstant.ORDER_NOT_CANCELLABLE);
             }
             InventoryClient.StockItemsRequest stockReq = toStock(order);
             f.step("status=" + order.getStatus());
@@ -232,7 +236,7 @@ public class OrderService {
         FlowLog f = FlowLog.start("adminStatus");
         try {
             if (!ADMIN_STATUSES.contains(status)) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid status");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.INVALID_STATUS);
             }
             Order order = order(id);
             order.setStatus(status);
@@ -266,6 +270,6 @@ public class OrderService {
 
     private Order order(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.ORDER_NOT_FOUND, MessageConstant.ORDER_NOT_FOUND));
     }
 }

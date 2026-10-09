@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.inventory.repository;
 
-import gtvt.haitv.ecommerce.inventory.domain.Inventory;
+import gtvt.haitv.ecommerce.inventory.entity.Inventory;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

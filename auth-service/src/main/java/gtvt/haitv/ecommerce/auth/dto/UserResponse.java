@@ -1,7 +1,13 @@
 package gtvt.haitv.ecommerce.auth.dto;
 
-import gtvt.haitv.ecommerce.auth.domain.User;
+import gtvt.haitv.ecommerce.auth.entity.User;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class UserResponse {
 
     private Long id;
@@ -18,25 +24,5 @@ public class UserResponse {
         r.role = user.getRole();
         r.status = user.getStatus();
         return r;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public String getStatus() {
-        return status;
     }
 }

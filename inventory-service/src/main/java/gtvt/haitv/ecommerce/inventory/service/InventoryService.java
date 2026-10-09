@@ -1,8 +1,10 @@
 package gtvt.haitv.ecommerce.inventory.service;
 
+import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
+import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
-import gtvt.haitv.ecommerce.inventory.domain.Inventory;
+import gtvt.haitv.ecommerce.inventory.entity.Inventory;
 import gtvt.haitv.ecommerce.inventory.dto.InventoryResponse;
 import gtvt.haitv.ecommerce.inventory.dto.StockCheckResponse;
 import gtvt.haitv.ecommerce.inventory.dto.StockItemsRequest;
@@ -49,7 +51,7 @@ public class InventoryService {
         try {
             Inventory inv = repository.findWithLockByProductId(productId).orElseGet(() -> create(productId));
             if (available < 0) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_STOCK", "availableQuantity cannot be negative");
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.INVALID_STOCK, MessageConstant.INVALID_STOCK);
             }
             inv.setAvailableQuantity(available);
             f.end("productId=" + productId + " avail=" + available);
@@ -78,7 +80,7 @@ public class InventoryService {
             for (var item : request.getItems()) {
                 Inventory inv = locked(item.getProductId());
                 if (inv.getAvailableQuantity() < item.getQuantity()) {
-                    throw new ApiException(HttpStatus.CONFLICT, "INSUFFICIENT_STOCK", "Not enough stock for product " + item.getProductId());
+                    throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.INSUFFICIENT_STOCK, MessageConstant.INSUFFICIENT_STOCK);
                 }
                 inv.setAvailableQuantity(inv.getAvailableQuantity() - item.getQuantity());
                 inv.setReservedQuantity(inv.getReservedQuantity() + item.getQuantity());
@@ -117,7 +119,7 @@ public class InventoryService {
             for (var item : request.getItems()) {
                 Inventory inv = locked(item.getProductId());
                 if (inv.getReservedQuantity() < item.getQuantity()) {
-                    throw new ApiException(HttpStatus.CONFLICT, "INSUFFICIENT_STOCK", "Reserved stock missing for product " + item.getProductId());
+                    throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.INSUFFICIENT_STOCK, MessageConstant.INSUFFICIENT_STOCK);
                 }
                 inv.setReservedQuantity(inv.getReservedQuantity() - item.getQuantity());
                 f.step("p=" + item.getProductId() + " qty=" + item.getQuantity());
@@ -131,12 +133,12 @@ public class InventoryService {
 
     private Inventory locked(Long productId) {
         return repository.findWithLockByProductId(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "INVENTORY_NOT_FOUND", "Inventory not found for product " + productId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.INVENTORY_NOT_FOUND, MessageConstant.INVENTORY_NOT_FOUND));
     }
 
     private Inventory unlocked(Long productId) {
         return repository.findByProductId(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "INVENTORY_NOT_FOUND", "Inventory not found for product " + productId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.INVENTORY_NOT_FOUND, MessageConstant.INVENTORY_NOT_FOUND));
     }
 
     private Inventory create(Long productId) {

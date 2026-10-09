@@ -1,9 +1,15 @@
 package gtvt.haitv.ecommerce.product.dto;
 
-import gtvt.haitv.ecommerce.product.domain.Product;
+import gtvt.haitv.ecommerce.product.entity.Product;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class ProductResponse {
     private Long id;
     private String name;
@@ -26,12 +32,4 @@ public class ProductResponse {
         r.status = p.getStatus();
         return r;
     }
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public BigDecimal getPrice() { return price; }
-    public Long getCategoryId() { return categoryId; }
-    public String getBrand() { return brand; }
-    public String getImageUrl() { return imageUrl; }
-    public String getStatus() { return status; }
 }

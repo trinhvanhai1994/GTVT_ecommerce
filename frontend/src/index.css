@@ -178,8 +178,64 @@ h1 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.1; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .btn-ghost:hover { background: #fff; }
+.btn-danger { background: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: #7f2222; }
 .btn-sm { padding: 8px 14px; font-size: 0.9rem; }
 .btn-lg { width: 100%; padding: 14px; }
+
+/* App dialogs / toasts — thay window.alert / window.confirm */
+.ui-modal-root {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center;
+  padding: 20px;
+  background: rgba(22, 20, 17, 0.42);
+  backdrop-filter: blur(4px);
+  animation: ui-fade 0.16s ease;
+}
+.ui-modal {
+  width: min(420px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 22px 18px;
+  display: grid; gap: 10px;
+  animation: ui-pop 0.18s ease;
+}
+.ui-modal-eyebrow {
+  margin: 0; text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 0.72rem; color: var(--muted); font-weight: 600;
+}
+.ui-modal h2 {
+  margin: 0; font-family: Fraunces, serif; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em;
+}
+.ui-modal-msg { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.ui-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ui-modal.danger .ui-modal-eyebrow { color: var(--danger); }
+.ui-toast-stack {
+  position: fixed; top: 76px; right: 16px; z-index: 90;
+  display: grid; gap: 10px; width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.ui-toast {
+  pointer-events: auto;
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 12px 12px 14px; box-shadow: var(--shadow);
+  animation: ui-slide 0.2s ease;
+}
+.ui-toast.v-ok { border-color: color-mix(in srgb, var(--ok) 35%, var(--line)); background: #f3faf5; }
+.ui-toast.v-error { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); background: #fdf4f4; }
+.ui-toast.v-info { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.ui-toast-body { display: grid; gap: 2px; font-size: 0.92rem; }
+.ui-toast-body strong { font-size: 0.88rem; }
+.ui-toast-close {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 1.2rem; line-height: 1; padding: 0 4px;
+}
+@keyframes ui-fade { from { opacity: 0; } }
+@keyframes ui-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes ui-slide { from { opacity: 0; transform: translateX(12px); } }
 .linkish { background: none; border: 0; cursor: pointer; color: var(--ink); text-decoration: underline; }
 
 .hero-banner {
@@ -250,9 +306,19 @@ label { display: grid; gap: 6px; font-size: 0.9rem; }
   display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
   background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; text-decoration: none;
 }
-.status { font-size: 0.8rem; padding: 4px 10px; border-radius: 99px; background: #efe6d6; }
-.status.CONFIRMED, .status.DELIVERED { background: #dcefe4; color: var(--ok); }
-.status.PAYMENT_FAILED, .status.CANCELLED { background: #f8dede; color: var(--danger); }
+.status { font-size: 0.8rem; padding: 4px 10px; border-radius: 99px; background: #efe6d6; white-space: nowrap; }
+.status.CONFIRMED, .status.DELIVERED,
+.status.ORDER_CONFIRMED, .status.ORDER_DELIVERED, .status.PAYMENT_SUCCESS { background: #dcefe4; color: var(--ok); }
+.status.PAYMENT_FAILED, .status.CANCELLED,
+.status.ORDER_CANCELLED { background: #f8dede; color: var(--danger); }
+.status.ORDER_CREATED, .status.ORDER_STATUS_UPDATED, .status.ORDER_SHIPPED { background: #e7eef8; color: #1f4b7a; }
+.notify-list .order-row { grid-template-columns: 1fr auto; }
+.notify-item.unread .order-row { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 6%, var(--card)); }
+.notify-item strong { display: inline-flex; align-items: center; gap: 8px; }
+.notify-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+}
 .banner { padding: 12px 14px; border-radius: 12px; display: grid; gap: 4px; }
 .banner.error { background: #f8dede; color: var(--danger); }
 .banner.ok { background: #dcefe4; color: var(--ok); }

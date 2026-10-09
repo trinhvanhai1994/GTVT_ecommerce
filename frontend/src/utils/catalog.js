@@ -25,6 +25,29 @@ export const CHANNEL_LABEL = {
   MOCK: "Demo"
 };
 
+/** Notification eventType → tiếng Việt (không hiện enum thô). */
+export const EVENT_TYPE_LABEL = {
+  ORDER_CREATED: "Đơn mới tạo",
+  ORDER_CONFIRMED: "Đơn đã xác nhận",
+  PAYMENT_SUCCESS: "Thanh toán thành công",
+  PAYMENT_FAILED: "Thanh toán thất bại",
+  ORDER_SHIPPED: "Đang giao hàng",
+  ORDER_DELIVERED: "Đã giao hàng",
+  ORDER_CANCELLED: "Đơn đã hủy",
+  ORDER_STATUS_UPDATED: "Cập nhật đơn hàng"
+};
+
+/** Notification delivery status → tiếng Việt. */
+export const NOTIFY_STATUS_LABEL = {
+  SENT: "Đã gửi",
+  FAILED: "Gửi thất bại"
+};
+
+export function labelOf(map, key, fallback = key) {
+  if (key == null || key === "") return "";
+  return map[key] || fallback;
+}
+
 export function formatWhen(value) {
   if (!value) return "";
   try {

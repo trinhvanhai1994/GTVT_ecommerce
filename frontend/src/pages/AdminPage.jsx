@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { Empty, ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
+import { useDialog } from "../context/DialogContext";
 import { money, STATUS_LABEL } from "../utils/catalog";
 
 const VIEWS = [
@@ -184,6 +185,7 @@ function Overview({ onGo, onOpenCount }) {
 }
 
 function CatalogAdmin() {
+  const { confirm, toast } = useDialog();
   const [page, setPage] = useState(null);
   const [cats, setCats] = useState([]);
   const [q, setQ] = useState("");
@@ -246,12 +248,21 @@ function CatalogAdmin() {
   };
 
   const remove = async (id, name) => {
-    if (!window.confirm(`Xóa sản phẩm “${name}”?`)) return;
+    const okConfirm = await confirm({
+      title: "Xoá sản phẩm?",
+      message: `“${name}” sẽ bị xoá khỏi catalog. Thao tác này không hoàn tác dễ dàng.`,
+      confirmLabel: "Xoá",
+      cancelLabel: "Giữ lại",
+      danger: true
+    });
+    if (!okConfirm) return;
     try {
       await api.delete(`/products/${id}`);
+      toast({ title: "Đã xoá", message: `Sản phẩm “${name}” đã được xoá.`, variant: "ok" });
       load();
     } catch (err) {
       setError(err);
+      toast({ title: "Xoá thất bại", message: err.message || "Thử lại sau.", variant: "error" });
     }
   };
 
@@ -433,6 +444,7 @@ function InventoryAdmin() {
 }
 
 function OrdersAdmin({ onOpenCount }) {
+  const { confirm, toast } = useDialog();
   const [rows, setRows] = useState([]);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("OPEN");
@@ -453,13 +465,21 @@ function OrdersAdmin({ onOpenCount }) {
 
   const patch = async (id, status) => {
     const label = STATUS_LABEL[status] || status;
-    if (!window.confirm(`Chuyển đơn #${id} sang “${label}”? Khách sẽ nhận email cập nhật.`)) return;
+    const okConfirm = await confirm({
+      title: "Cập nhật trạng thái đơn?",
+      message: `Chuyển đơn #${id} sang “${label}”. Khách sẽ nhận email cập nhật.`,
+      confirmLabel: "Cập nhật",
+      cancelLabel: "Huỷ"
+    });
+    if (!okConfirm) return;
     setError(null);
     try {
       await api.patch(`/admin/orders/${id}/status`, { status });
+      toast({ title: "Đã cập nhật", message: `Đơn #${id} → ${label}`, variant: "ok" });
       load();
     } catch (err) {
       setError(err);
+      toast({ title: "Cập nhật thất bại", message: err.message || "Thử lại sau.", variant: "error" });
     }
   };
 

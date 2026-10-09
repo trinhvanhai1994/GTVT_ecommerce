@@ -16,9 +16,17 @@ release.properties
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+ops-console/node_modules/
+ops-console/dist/
+ops-console/.vite/
 frontend-bicycle/node_modules/
 frontend-bicycle/dist/
 frontend-bicycle/.vite/
+
+# Ops Console
+data/jobs/
+scripts/.ops-deploy.lock
+scripts/.ops-deploy.lock.d/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

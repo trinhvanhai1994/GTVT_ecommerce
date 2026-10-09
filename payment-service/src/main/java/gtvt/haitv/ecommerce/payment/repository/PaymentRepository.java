@@ -1,6 +1,6 @@
 package gtvt.haitv.ecommerce.payment.repository;
 
-import gtvt.haitv.ecommerce.payment.domain.Payment;
+import gtvt.haitv.ecommerce.payment.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
