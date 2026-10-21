@@ -10,6 +10,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class CategoryRequest {
+    @jakarta.validation.constraints.NotNull
+    private Long shopId;
     @NotBlank @Size(max = 128) private String name;
     @Size(max = 512) private String description;
 }

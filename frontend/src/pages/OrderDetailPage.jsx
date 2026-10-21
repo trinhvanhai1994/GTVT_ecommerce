@@ -91,7 +91,7 @@ export default function OrderDetailPage() {
       {order.status === "CANCELLED" && (
         <div className="banner error">
           <strong>Đơn đã hủy</strong>
-          <span>Email xác nhận hủy đã được ghi nhận / gửi (nếu bật mail).</span>
+          <span>Email xác nhận hủy đơn đã được gửi tới hộp thư của bạn.</span>
         </div>
       )}
 

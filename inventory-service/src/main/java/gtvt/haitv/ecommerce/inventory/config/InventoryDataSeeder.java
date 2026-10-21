@@ -13,10 +13,11 @@ public class InventoryDataSeeder {
     @Bean
     CommandLineRunner seedInventory(InventoryRepository repository) {
         return args -> {
-            if (repository.count() > 0) {
-                return;
-            }
-            for (long productId = 1; productId <= 11; productId++) {
+            // Ensure stock for themed demo catalog (~50 products across 10 shops)
+            for (long productId = 1; productId <= 80; productId++) {
+                if (repository.findByProductId(productId).isPresent()) {
+                    continue;
+                }
                 Inventory inv = new Inventory();
                 inv.setProductId(productId);
                 inv.setAvailableQuantity(50);

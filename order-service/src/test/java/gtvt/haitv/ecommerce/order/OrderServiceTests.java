@@ -1,11 +1,13 @@
 package gtvt.haitv.ecommerce.order;
 
 import gtvt.haitv.ecommerce.common.api.ApiResponse;
+import gtvt.haitv.ecommerce.common.constant.AppConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.order.client.CartClient;
 import gtvt.haitv.ecommerce.order.client.InventoryClient;
 import gtvt.haitv.ecommerce.order.client.PaymentClient;
 import gtvt.haitv.ecommerce.order.client.ProductClient;
+import gtvt.haitv.ecommerce.order.client.ShopClient;
 import gtvt.haitv.ecommerce.order.dto.CheckoutRequest;
 import gtvt.haitv.ecommerce.order.messaging.OrderEventPublisher;
 import gtvt.haitv.ecommerce.order.repository.OrderRepository;
@@ -23,6 +25,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -35,11 +38,17 @@ class OrderServiceTests {
     @MockBean ProductClient productClient;
     @MockBean InventoryClient inventoryClient;
     @MockBean PaymentClient paymentClient;
+    @MockBean ShopClient shopClient;
     @MockBean OrderEventPublisher eventPublisher;
 
     @BeforeEach
     void reset() {
         orderRepository.deleteAll();
+        ShopClient.RemoteShop shop = new ShopClient.RemoteShop();
+        shop.setId(1L);
+        shop.setName("Demo Shop");
+        shop.setStatus(AppConstant.SHOP_APPROVED);
+        when(shopClient.getById(anyLong())).thenReturn(ApiResponse.ok(shop));
     }
 
     private CheckoutRequest checkout() {
@@ -55,12 +64,14 @@ class OrderServiceTests {
         CartClient.RemoteItem item = new CartClient.RemoteItem();
         item.setId(1L);
         item.setProductId(1L);
+        item.setShopId(1L);
         item.setQuantity(2);
         CartClient.RemoteCart cart = new CartClient.RemoteCart();
         cart.setItems(List.of(item));
         when(cartClient.getCart(5L)).thenReturn(ApiResponse.ok(cart));
         ProductClient.RemoteProduct p = new ProductClient.RemoteProduct();
         p.setId(1L);
+        p.setShopId(1L);
         p.setName("Phone");
         p.setPrice(new BigDecimal("100.00"));
         p.setStatus("ACTIVE");
@@ -80,9 +91,10 @@ class OrderServiceTests {
         pay.setId(9L);
         pay.setStatus("SUCCESS");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
-        var order = orderService.checkout(5L, "customer@example.com", checkout());
-        assertEquals("CONFIRMED", order.getStatus());
-        assertEquals(0, new BigDecimal("200.00").compareTo(order.getTotalAmount()));
+        var orders = orderService.checkout(5L, "customer@example.com", checkout());
+        assertEquals(1, orders.size());
+        assertEquals("CONFIRMED", orders.get(0).getStatus());
+        assertEquals(0, new BigDecimal("200.00").compareTo(orders.get(0).getTotalAmount()));
     }
 
     @Test
@@ -106,8 +118,9 @@ class OrderServiceTests {
         pay.setId(9L);
         pay.setStatus("FAILED");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
-        var order = orderService.checkout(5L, "customer@example.com", checkout());
-        assertEquals("PAYMENT_FAILED", order.getStatus());
+        var orders = orderService.checkout(5L, "customer@example.com", checkout());
+        assertEquals(1, orders.size());
+        assertEquals("PAYMENT_FAILED", orders.get(0).getStatus());
     }
 
     @Test
@@ -133,7 +146,7 @@ class OrderServiceTests {
         pay.setStatus("SUCCESS");
         when(paymentClient.charge(any())).thenReturn(ApiResponse.ok(pay));
         var created = orderService.checkout(5L, "customer@example.com", checkout());
-        var cancelled = orderService.cancel(created.getId(), 5L);
+        var cancelled = orderService.cancel(created.get(0).getId(), 5L);
         assertEquals("CANCELLED", cancelled.getStatus());
     }
 }

@@ -32,6 +32,8 @@ public class CartItem {
     private Cart cart;
     @Column(name = "product_id", nullable = false)
     private Long productId;
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
     @Column(nullable = false)
     private int quantity;
     @Column(name = "created_at", nullable = false)

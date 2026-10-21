@@ -29,9 +29,14 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
+    public ApiResponse<List<OrderResponse>> checkout(@Valid @RequestBody CheckoutRequest request) {
         var user = SecurityUtils.currentUser();
         return ApiResponse.ok("Created", orderService.checkout(user.getUserId(), user.getEmail(), request));
+    }
+
+    @GetMapping("/seller")
+    public ApiResponse<List<OrderResponse>> sellerOrders(@org.springframework.web.bind.annotation.RequestParam("shopId") Long shopId) {
+        return ApiResponse.ok(orderService.sellerOrders(shopId));
     }
 
     @GetMapping

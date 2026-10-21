@@ -30,6 +30,8 @@ public class Product {
     private String description;
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
     private String brand;

@@ -26,6 +26,7 @@ public final class ErrorConstant {
     public static final String CATEGORY_NOT_FOUND = "CATEGORY_NOT_FOUND";
     public static final String PRODUCT_NOT_FOUND = "PRODUCT_NOT_FOUND";
     public static final String PRODUCT_SERVICE_ERROR = "PRODUCT_SERVICE_ERROR";
+    public static final String SHOP_NOT_FOUND = "SHOP_NOT_FOUND";
 
     // --- Cart / order / payment / inventory ---
     public static final String CART_EMPTY = "CART_EMPTY";

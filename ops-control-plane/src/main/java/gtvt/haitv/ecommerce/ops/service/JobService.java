@@ -68,8 +68,14 @@ public class JobService {
     public JobDto enqueueServiceAction(String serviceId, String action) {
         catalog.find(serviceId).orElseThrow(() -> new IllegalArgumentException("Unknown service: " + serviceId));
         String act = action == null ? "" : action.trim().toUpperCase();
+        if (isOpsService(serviceId)) {
+            throw new IllegalArgumentException(
+                    "Không thao tác deploy/stop/restart trên Ops (" + serviceId + "). Chỉ xem log/status — giữ console dùng được.");
+        }
         return enqueue(switch (act) {
             case "RESTART" -> List.of("restart", "--service", serviceId);
+            case "STOP" -> List.of("stop", "--service", serviceId);
+            case "START" -> List.of("start", "--service", serviceId);
             case "REBUILD" -> List.of("rebuild", "--service", serviceId);
             case "MAVEN_REBUILD" -> List.of("maven-rebuild", "--service", serviceId);
             default -> throw new IllegalArgumentException("Unsupported action: " + action);
@@ -78,12 +84,19 @@ public class JobService {
 
     public JobDto enqueueStackAction(String action) {
         String act = action == null ? "" : action.trim().toUpperCase();
+        // Always exclude ops-api/ops-ui so Ops Console stays up while managing the stack
         return enqueue(switch (act) {
-            case "FULL" -> List.of("full");
-            case "RESTART_ONLY" -> List.of("full", "--restart-only");
-            case "SKIP_MAVEN" -> List.of("full", "--skip-maven");
+            case "FULL" -> List.of("full", "--exclude-ops");
+            case "RESTART_ONLY", "START_ALL", "UP_ALL" -> List.of("full", "--restart-only", "--exclude-ops");
+            case "SKIP_MAVEN", "REBUILD_ALL" -> List.of("full", "--skip-maven", "--exclude-ops");
+            case "STOP_ALL" -> List.of("stop-all");
+            case "START_MANAGED" -> List.of("start-all");
             default -> throw new IllegalArgumentException("Unsupported stack action: " + action);
         }, "STACK " + act);
+    }
+
+    private static boolean isOpsService(String serviceId) {
+        return "ops-api".equals(serviceId) || "ops-ui".equals(serviceId);
     }
 
     public List<JobDto> list() {

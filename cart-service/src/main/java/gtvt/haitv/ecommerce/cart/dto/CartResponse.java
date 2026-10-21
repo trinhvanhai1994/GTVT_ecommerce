@@ -21,6 +21,7 @@ public class CartResponse {
     public static class CartItemResponse {
         private Long id;
         private Long productId;
+        private Long shopId;
         private int quantity;
     }
 }

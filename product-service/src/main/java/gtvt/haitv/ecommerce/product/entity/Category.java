@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +16,7 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", uniqueConstraints = @UniqueConstraint(columnNames = {"shop_id", "name"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +24,9 @@ public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false, unique = true, length = 128)
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
+    @Column(nullable = false, length = 128)
     private String name;
     @Column(length = 512)
     private String description;

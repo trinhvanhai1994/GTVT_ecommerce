@@ -178,6 +178,13 @@ public class AuthService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getUserResponseByEmail(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email == null ? "" : email.trim())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.USER_NOT_FOUND, MessageConstant.USER_NOT_FOUND));
+        return UserResponse.from(user);
+    }
+
     @Transactional
     public UserResponse updateStatus(Long id, String status) {
         FlowLog f = FlowLog.start("updateStatus");
@@ -191,6 +198,25 @@ public class AuthService {
             f.fail(e);
             throw e;
         }
+    }
+
+    @Transactional
+    public void setRole(Long id, String role) {
+        if (role == null || role.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.VALIDATION_FAILED);
+        }
+        String normalized = role.trim().toUpperCase();
+        if (!AppConstant.ROLE_CUSTOMER.equals(normalized)
+                && !AppConstant.ROLE_SELLER.equals(normalized)
+                && !AppConstant.ROLE_PLATFORM_ADMIN.equals(normalized)
+                && !AppConstant.ROLE_ADMIN.equals(normalized)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.VALIDATION_FAILED);
+        }
+        User user = getUser(id);
+        if (AppConstant.ROLE_PLATFORM_ADMIN.equals(user.getRole()) || AppConstant.ROLE_ADMIN.equals(user.getRole())) {
+            return;
+        }
+        user.setRole(normalized);
     }
 
     private User getUser(Long id) {

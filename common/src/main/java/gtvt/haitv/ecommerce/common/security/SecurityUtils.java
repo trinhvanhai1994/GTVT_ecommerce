@@ -26,12 +26,21 @@ public final class SecurityUtils {
     }
 
     public static boolean isAdmin() {
-        return AppConstant.ROLE_ADMIN.equals(currentUser().getRole());
+        String role = currentUser().getRole();
+        return AppConstant.ROLE_ADMIN.equals(role) || AppConstant.ROLE_PLATFORM_ADMIN.equals(role);
+    }
+
+    public static boolean isSeller() {
+        return AppConstant.ROLE_SELLER.equals(currentUser().getRole());
+    }
+
+    public static boolean isPlatformAdminRole(String role) {
+        return AppConstant.ROLE_ADMIN.equals(role) || AppConstant.ROLE_PLATFORM_ADMIN.equals(role);
     }
 
     public static void requireOwnerOrAdmin(Long resourceUserId) {
         AuthenticatedUser user = currentUser();
-        if (!AppConstant.ROLE_ADMIN.equals(user.getRole()) && !user.getUserId().equals(resourceUserId)) {
+        if (!isPlatformAdminRole(user.getRole()) && !user.getUserId().equals(resourceUserId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
         }
     }

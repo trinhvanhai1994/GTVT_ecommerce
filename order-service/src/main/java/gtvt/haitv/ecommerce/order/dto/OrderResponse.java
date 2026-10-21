@@ -16,6 +16,8 @@ import java.util.List;
 public class OrderResponse {
     private Long id;
     private Long userId;
+    private Long shopId;
+    private String shopName;
     private String status;
     private BigDecimal totalAmount;
     private String customerEmail;
@@ -30,6 +32,8 @@ public class OrderResponse {
         OrderResponse r = new OrderResponse();
         r.id = order.getId();
         r.userId = order.getUserId();
+        r.shopId = order.getShopId();
+        r.shopName = order.getShopName();
         r.status = order.getStatus();
         r.totalAmount = order.getTotalAmount();
         r.customerEmail = order.getCustomerEmail();

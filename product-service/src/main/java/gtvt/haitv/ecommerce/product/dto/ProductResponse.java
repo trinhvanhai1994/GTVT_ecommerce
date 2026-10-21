@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class ProductResponse {
     private Long id;
+    private Long shopId;
     private String name;
     private String description;
     private BigDecimal price;
@@ -23,6 +24,7 @@ public class ProductResponse {
     public static ProductResponse from(Product p) {
         ProductResponse r = new ProductResponse();
         r.id = p.getId();
+        r.shopId = p.getShopId();
         r.name = p.getName();
         r.description = p.getDescription();
         r.price = p.getPrice();

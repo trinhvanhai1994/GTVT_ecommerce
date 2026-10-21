@@ -30,6 +30,10 @@ public class Order {
     private Long id;
     @Column(name = "user_id", nullable = false)
     private Long userId;
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
+    @Column(name = "shop_name")
+    private String shopName;
     @Column(name = "customer_email", length = 255)
     private String customerEmail;
     @Column(nullable = false, length = 32)

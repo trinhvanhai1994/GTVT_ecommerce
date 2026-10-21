@@ -4,12 +4,13 @@ import api from "../services/api";
 import { Empty, ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
 import { useDialog } from "../context/DialogContext";
-import { money, STATUS_LABEL } from "../utils/catalog";
+import { money, STATUS_LABEL, SHOP_STATUS_LABEL, labelOf } from "../utils/catalog";
 
 const VIEWS = [
   { id: "home", label: "Tổng quan", hint: "Việc cần làm hôm nay" },
+  { id: "shops", label: "Duyệt cửa hàng", hint: "Duyệt · từ chối · tạm ngưng" },
   { id: "orders", label: "Đơn hàng", hint: "Xử lý · giao · hoàn tất" },
-  { id: "catalog", label: "Sản phẩm", hint: "Catalog và danh mục" },
+  { id: "catalog", label: "Sản phẩm", hint: "Sản phẩm và danh mục" },
   { id: "stock", label: "Tồn kho", hint: "Sửa số lượng tại chỗ" },
   { id: "people", label: "Người dùng", hint: "Tài khoản hệ thống" }
 ];
@@ -56,17 +57,87 @@ export default function AdminPage() {
       <div>
         <header className="admin-head">
           <div>
-            <p className="eyebrow">Nội bộ · {user?.fullName || "Admin"}</p>
+            <p className="eyebrow">Quản trị sàn · {user?.fullName || "Quản trị viên"}</p>
             <h1>{VIEWS.find((v) => v.id === view)?.label}</h1>
           </div>
         </header>
         {view === "home" && <Overview onGo={go} onOpenCount={setOpenOrders} />}
+        {view === "shops" && <ShopsAdmin />}
         {view === "orders" && <OrdersAdmin onOpenCount={setOpenOrders} />}
         {view === "catalog" && <CatalogAdmin />}
         {view === "stock" && <InventoryAdmin />}
         {view === "people" && <UsersAdmin />}
       </div>
     </section>
+  );
+}
+
+function ShopsAdmin() {
+  const [shops, setShops] = useState([]);
+  const [error, setError] = useState(null);
+  const [reason, setReason] = useState("");
+  const { confirm } = useDialog();
+
+  const load = () =>
+    api
+      .get("/admin/shops")
+      .then((r) => setShops(r.data.data || []))
+      .catch(setError);
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const act = async (id, action) => {
+    try {
+      if (action === "reject") {
+        const ok = await confirm({ title: "Từ chối shop?", message: "Nhập lý do từ chối." });
+        if (!ok) return;
+        await api.patch(`/admin/shops/${id}/reject`, { reason: reason || "Không đủ điều kiện" });
+      } else {
+        await api.patch(`/admin/shops/${id}/${action}`);
+      }
+      await load();
+    } catch (e) {
+      setError(e);
+    }
+  };
+
+  return (
+    <div>
+      <ErrorBanner error={error} />
+      <label className="form-card" style={{ marginBottom: "1rem" }}>
+        Lý do từ chối (dùng khi từ chối hồ sơ)
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Thiếu thông tin…" />
+      </label>
+      {shops.length === 0 && <Empty title="Chưa có hồ sơ cửa hàng" />}
+      <ul className="plain-list">
+        {shops.map((s) => (
+          <li key={s.id} className="admin-shop-row">
+            <div>
+              <strong>{s.name}</strong> <span className="muted">/{s.slug}</span>
+              <div className="muted">
+                #{s.id} · chủ sở hữu #{s.ownerUserId} · <strong>{labelOf(SHOP_STATUS_LABEL, s.status)}</strong>
+                {s.rejectReason ? ` · ${s.rejectReason}` : ""}
+              </div>
+            </div>
+            <div className="hero-actions">
+              {s.status !== "APPROVED" && (
+                <button type="button" className="btn" onClick={() => act(s.id, "approve")}>
+                  Duyệt
+                </button>
+              )}
+              <button type="button" className="btn btn-ghost" onClick={() => act(s.id, "reject")}>
+                Từ chối
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => act(s.id, "suspend")}>
+                Tạm ngưng
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -119,7 +190,7 @@ function Overview({ onGo, onOpenCount }) {
         <button type="button" className="stat kpi" onClick={() => onGo("catalog")}>
           <span>Sản phẩm</span>
           <strong>{stats.products}</strong>
-          <em>Quản lý catalog →</em>
+          <em>Quản lý sản phẩm →</em>
         </button>
         <button type="button" className="stat kpi" onClick={() => onGo("people")}>
           <span>Người dùng</span>
@@ -168,7 +239,7 @@ function Overview({ onGo, onOpenCount }) {
             </button>
           </div>
           {stats.low.length === 0 ? (
-            <Empty title="Tồn ổn" text="Không có SKU nào ≤ 5." />
+            <Empty title="Tồn ổn" text="Không có mặt hàng nào còn ≤ 5 sản phẩm." />
           ) : (
             <ul className="plain-list">
               {stats.low.slice(0, 6).map((r) => (
@@ -188,22 +259,40 @@ function CatalogAdmin() {
   const { confirm, toast } = useDialog();
   const [page, setPage] = useState(null);
   const [cats, setCats] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [shopId, setShopId] = useState("");
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ name: "", price: "99", categoryId: "", brand: "Nava", status: "ACTIVE" });
+  const [form, setForm] = useState({ name: "", price: "", categoryId: "", brand: "", status: "ACTIVE" });
   const [catForm, setCatForm] = useState({ name: "", description: "" });
   const [error, setError] = useState(null);
   const [ok, setOk] = useState("");
 
-  const load = () =>
-    Promise.all([api.get("/products", { params: { size: 50 } }), api.get("/products/categories")])
+  const load = (sid) => {
+    if (!sid) return Promise.resolve();
+    return Promise.all([
+      api.get("/products", { params: { size: 50, shopId: sid } }),
+      api.get("/products/categories", { params: { shopId: sid } })
+    ])
       .then(([p, c]) => {
         setPage(p.data.data);
         setCats(c.data.data || []);
       })
       .catch(setError);
+  };
 
   useEffect(() => {
-    void load();
+    api
+      .get("/admin/shops")
+      .then((r) => {
+        const list = r.data.data || [];
+        setShops(list);
+        const first = list.find((s) => s.status === "APPROVED") || list[0];
+        if (first) {
+          setShopId(String(first.id));
+          return load(first.id);
+        }
+      })
+      .catch(setError);
   }, []);
 
   const catName = (id) => cats.find((c) => c.id === id)?.name || `#${id}`;
@@ -219,6 +308,7 @@ function CatalogAdmin() {
     setError(null);
     try {
       await api.post("/products", {
+        shopId: Number(shopId),
         name: form.name,
         description: form.name,
         price: Number(form.price),
@@ -228,7 +318,7 @@ function CatalogAdmin() {
       });
       setForm({ ...form, name: "" });
       setOk("Đã thêm sản phẩm.");
-      load();
+      load(shopId);
     } catch (err) {
       setError(err);
     }
@@ -238,10 +328,10 @@ function CatalogAdmin() {
     e.preventDefault();
     setError(null);
     try {
-      await api.post("/products/categories", catForm);
+      await api.post("/products/categories", { ...catForm, shopId: Number(shopId) });
       setCatForm({ name: "", description: "" });
       setOk("Đã thêm danh mục.");
-      load();
+      load(shopId);
     } catch (err) {
       setError(err);
     }
@@ -250,7 +340,7 @@ function CatalogAdmin() {
   const remove = async (id, name) => {
     const okConfirm = await confirm({
       title: "Xoá sản phẩm?",
-      message: `“${name}” sẽ bị xoá khỏi catalog. Thao tác này không hoàn tác dễ dàng.`,
+      message: `“${name}” sẽ bị xoá khỏi danh mục sản phẩm. Thao tác này không hoàn tác dễ dàng.`,
       confirmLabel: "Xoá",
       cancelLabel: "Giữ lại",
       danger: true
@@ -259,7 +349,7 @@ function CatalogAdmin() {
     try {
       await api.delete(`/products/${id}`);
       toast({ title: "Đã xoá", message: `Sản phẩm “${name}” đã được xoá.`, variant: "ok" });
-      load();
+      load(shopId);
     } catch (err) {
       setError(err);
       toast({ title: "Xoá thất bại", message: err.message || "Thử lại sau.", variant: "error" });
@@ -269,6 +359,22 @@ function CatalogAdmin() {
   return (
     <div className="catalog-split">
       <div className="admin-card">
+        <label>
+          Cửa hàng
+          <select
+            value={shopId}
+            onChange={(e) => {
+              setShopId(e.target.value);
+              void load(e.target.value);
+            }}
+          >
+            {shops.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({labelOf(SHOP_STATUS_LABEL, s.status)})
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="panel-title">
           <h2>Danh sách</h2>
           <input className="search-inline" placeholder="Lọc theo tên, hãng..." value={q} onChange={(e) => setQ(e.target.value)} />
@@ -281,7 +387,7 @@ function CatalogAdmin() {
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </label>
           <label>
-            <span>Giá (USD)</span>
+            <span>Giá (VND)</span>
             <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
           </label>
           <label>

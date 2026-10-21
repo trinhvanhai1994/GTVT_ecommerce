@@ -46,7 +46,7 @@ public class CartService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.QUANTITY_MUST_BE_POSITIVE);
             }
             f.step("product " + request.getProductId());
-            ensureProductExists(request.getProductId());
+            Long shopId = resolveShopId(request.getProductId());
             Cart cart = getOrCreate(userId);
             CartItem existing = cart.getItems().stream()
                     .filter(i -> i.getProductId().equals(request.getProductId()))
@@ -56,11 +56,15 @@ public class CartService {
                 CartItem item = new CartItem();
                 item.setCart(cart);
                 item.setProductId(request.getProductId());
+                item.setShopId(shopId);
                 item.setQuantity(request.getQuantity());
                 cart.getItems().add(item);
                 f.step("insert qty=" + request.getQuantity());
             } else {
                 existing.setQuantity(existing.getQuantity() + request.getQuantity());
+                if (existing.getShopId() == null) {
+                    existing.setShopId(shopId);
+                }
                 f.step("inc qty=" + existing.getQuantity());
             }
             CartResponse r = toResponse(persist(cart));
@@ -114,14 +118,21 @@ public class CartService {
         return toResponse(persist(cart));
     }
 
-    private void ensureProductExists(Long productId) {
+    private Long resolveShopId(Long productId) {
         try {
             var response = productClient.getProduct(productId);
             if (response == null || response.getData() == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
             }
+            Object shopId = response.getData().get("shopId");
+            if (shopId == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Product missing shopId");
+            }
+            return Long.valueOf(shopId.toString());
         } catch (FeignException.NotFound ex) {
             throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
+        } catch (ApiException ex) {
+            throw ex;
         } catch (FeignException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, ErrorConstant.PRODUCT_SERVICE_ERROR, MessageConstant.PRODUCT_SERVICE_ERROR);
         }
@@ -150,6 +161,7 @@ public class CartService {
             CartResponse.CartItemResponse ir = new CartResponse.CartItemResponse();
             ir.setId(i.getId());
             ir.setProductId(i.getProductId());
+            ir.setShopId(i.getShopId());
             ir.setQuantity(i.getQuantity());
             return ir;
         }).toList());

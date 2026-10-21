@@ -9,15 +9,21 @@ import { money, productImage } from "../utils/catalog";
 import { savePendingCart } from "../utils/pendingCart";
 
 export default function ProductDetailPage() {
-  const { id } = useParams();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { id, shopId: shopKey } = useParams();
+  const { isAuthenticated, isPlatformAdmin } = useAuth();
   const { refresh } = useCart() || {};
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [resolvedShopId, setResolvedShopId] = useState(null);
   const [qty, setQty] = useState(1);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const shopId =
+    resolvedShopId ||
+    (shopKey && /^\d+$/.test(String(shopKey)) ? shopKey : product?.shopId != null ? String(product.shopId) : null);
+  const backHref = shopId ? `/shops/${shopId}` : "/";
 
   useEffect(() => {
     setLoading(true);
@@ -28,11 +34,34 @@ export default function ProductDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Legacy slug in URL → redirect to /shops/{id}/products/{productId}
+  useEffect(() => {
+    if (!shopKey || /^\d+$/.test(String(shopKey))) {
+      setResolvedShopId(shopKey && /^\d+$/.test(String(shopKey)) ? String(shopKey) : null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get(`/shops/${shopKey}`)
+      .then((res) => {
+        if (cancelled) return;
+        const sid = res.data.data?.id;
+        if (sid != null) {
+          setResolvedShopId(String(sid));
+          navigate(`/shops/${sid}/products/${id}`, { replace: true });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [shopKey, id, navigate]);
+
   const goLoginToBuy = () => {
     savePendingCart({ productId: Number(id), quantity: Number(qty) || 1 });
     navigate("/login", {
       state: {
-        from: `/products/${id}`,
+        from: shopId ? `/shops/${shopId}/products/${id}` : `/products/${id}`,
         intent: "cart",
         productName: product?.name
       }
@@ -70,8 +99,8 @@ export default function ProductDetailPage() {
         <img src={productImage(product)} alt={product.name} />
       </div>
       <div className="detail-info">
-        <Link className="crumb" to="/products">
-          ← Tất cả sản phẩm
+        <Link className="crumb" to={backHref}>
+          ← {shopId ? "Quay lại cửa hàng" : "Về trang chủ"}
         </Link>
         <p className="product-brand">{product.brand}</p>
         <h1>{product.name}</h1>
@@ -79,7 +108,7 @@ export default function ProductDetailPage() {
         <p className="lede">{product.description}</p>
         <ErrorBanner error={error} />
         {msg && <div className="banner ok">{msg}</div>}
-        {!isAdmin && (
+        {!isPlatformAdmin && (
           <div className="buy-box">
             <label>
               Số lượng
@@ -90,11 +119,11 @@ export default function ProductDetailPage() {
             </button>
           </div>
         )}
-        {!isAuthenticated && !isAdmin && (
-          <p className="muted">Cần tài khoản khách để giữ giỏ hàng. Sau khi đăng nhập, sản phẩm sẽ được thêm tự động.</p>
+        {!isAuthenticated && !isPlatformAdmin && (
+          <p className="muted">Đăng nhập để thêm vào giỏ và theo dõi đơn hàng. Sản phẩm sẽ được thêm tự động sau khi đăng nhập.</p>
         )}
         <ul className="bullets">
-          <li>Kiểm tra tồn kho khi thanh toán</li>
+          <li>Cam kết hàng chính hãng từ gian hàng</li>
           <li>Đổi trả trong 7 ngày nếu lỗi nhà sản xuất</li>
           <li>Giao hàng tiêu chuẩn 2–4 ngày</li>
         </ul>

@@ -39,7 +39,7 @@ spring:
         - id: order-service
           uri: ${ORDER_SERVICE_URI:http://localhost:8085}
           predicates:
-            - Path=/api/orders/**,/api/admin/orders/**
+            - Path=/api/orders/**,/api/admin/orders/**,/api/orders/seller/**
         - id: payment-service
           uri: ${PAYMENT_SERVICE_URI:http://localhost:8086}
           predicates:
@@ -48,6 +48,10 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/notifications/**
+        - id: shop-service
+          uri: ${SHOP_SERVICE_URI:http://localhost:8089}
+          predicates:
+            - Path=/api/shops/**,/api/admin/shops/**
 
 eureka:
   client:

@@ -10,7 +10,18 @@ public final class AppConstant {
 
     // --- Roles ---
     public static final String ROLE_CUSTOMER = "CUSTOMER";
+    /** @deprecated Prefer ROLE_PLATFORM_ADMIN; kept for JWT/DB cũ */
     public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_PLATFORM_ADMIN = "PLATFORM_ADMIN";
+    public static final String ROLE_SELLER = "SELLER";
+
+    // --- Shop status ---
+    public static final String SHOP_PENDING = "PENDING";
+    public static final String SHOP_APPROVED = "APPROVED";
+    public static final String SHOP_REJECTED = "REJECTED";
+    public static final String SHOP_SUSPENDED = "SUSPENDED";
+    public static final String SHOP_MEMBER_OWNER = "OWNER";
+    public static final String SHOP_MEMBER_ACTIVE = "ACTIVE";
 
     // --- User / product status ---
     public static final String STATUS_ACTIVE = "ACTIVE";

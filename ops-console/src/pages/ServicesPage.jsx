@@ -18,7 +18,12 @@ export default function ServicesPage() {
     return () => clearInterval(t);
   }, []);
 
-  const groups = ["infra", "app", "ui", "ops"];
+  const groups = [
+    { key: "infra", label: "Hạ tầng" },
+    { key: "app", label: "Ứng dụng" },
+    { key: "ui", label: "Giao diện" },
+    { key: "ops", label: "Ops (chỉ xem log)" }
+  ];
 
   return (
     <section>
@@ -26,7 +31,7 @@ export default function ServicesPage() {
         <div>
           <p className="eyebrow">Danh sách</p>
           <h1>Services</h1>
-          <p className="muted">Click một service để xem chi tiết và log lớn bên phải.</p>
+          <p className="muted">Click để xem log. Deploy/stop/restart chỉ cho service ngoài Ops.</p>
         </div>
         <button type="button" className="btn ghost" onClick={load}>
           Làm mới
@@ -35,11 +40,12 @@ export default function ServicesPage() {
       {error && <div className="banner error">{error}</div>}
 
       {groups.map((g) => {
-        const items = list.filter((s) => s.group === g);
+        const items = list.filter((s) => s.group === g.key);
         if (!items.length) return null;
+        const isOps = g.key === "ops";
         return (
-          <div key={g} className="group">
-            <h2>{g}</h2>
+          <div key={g.key} className="group">
+            <h2>{g.label}</h2>
             <div className="cards">
               {items.map((s) => (
                 <Link key={s.id} to={`/services/${s.id}`} className="svc-card clickable">
@@ -51,7 +57,7 @@ export default function ServicesPage() {
                     {s.composeService}
                     {s.port != null ? ` · :${s.port}` : ""}
                   </p>
-                  <span className="open-hint">Xem log & thao tác →</span>
+                  <span className="open-hint">{isOps ? "Chỉ xem log →" : "Log & thao tác →"}</span>
                 </Link>
               ))}
             </div>

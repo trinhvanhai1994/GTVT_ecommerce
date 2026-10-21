@@ -50,17 +50,20 @@ export function AuthProvider({ children }) {
     await api.post("/auth/register", payload);
   };
 
+  const role = String(user?.role || "").toUpperCase();
   const value = useMemo(
     () => ({
       user,
       token,
       isAuthenticated: Boolean(token && user),
-      isAdmin: String(user?.role || "").toUpperCase() === AppConstant.ROLE_ADMIN,
+      isAdmin: role === AppConstant.ROLE_ADMIN || role === AppConstant.ROLE_PLATFORM_ADMIN,
+      isSeller: role === AppConstant.ROLE_SELLER,
+      isPlatformAdmin: role === AppConstant.ROLE_PLATFORM_ADMIN || role === AppConstant.ROLE_ADMIN,
       login,
       register,
       logout
     }),
-    [user, token]
+    [user, token, role]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

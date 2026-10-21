@@ -1,6 +1,6 @@
 export function money(value) {
   const n = Number(value || 0);
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(n);
 }
 
 export const STATUS_LABEL = {
@@ -16,13 +16,20 @@ export const STATUS_LABEL = {
   INACTIVE: "Ngừng bán"
 };
 
+export const SHOP_STATUS_LABEL = {
+  PENDING: "Chờ duyệt",
+  APPROVED: "Đang hoạt động",
+  REJECTED: "Đã từ chối",
+  SUSPENDED: "Tạm ngưng"
+};
+
 /** Happy-path steps shown on order detail / checkout. */
 export const ORDER_FLOW = ["CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED"];
 
 export const CHANNEL_LABEL = {
   EMAIL: "Email",
   CONSOLE: "Hệ thống",
-  MOCK: "Demo"
+  MOCK: "Hệ thống"
 };
 
 /** Notification eventType → tiếng Việt (không hiện enum thô). */

@@ -2,10 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { fetchLogs, fetchServices, postServiceAction } from "../api.js";
 import StatusPill from "../components/StatusPill.jsx";
+import { useDialog } from "../context/DialogContext.jsx";
+
+const OPS_IDS = new Set(["ops-api", "ops-ui"]);
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { confirm, toast } = useDialog();
   const [svc, setSvc] = useState(null);
   const [text, setText] = useState("");
   const [filter, setFilter] = useState("");
@@ -14,6 +18,7 @@ export default function ServiceDetailPage() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const preRef = useRef(null);
+  const isOps = OPS_IDS.has(id);
 
   useEffect(() => {
     fetchServices()
@@ -55,24 +60,39 @@ export default function ServiceDetailPage() {
   }, [text, paused]);
 
   const runAction = async (action) => {
-    const labels = {
-      RESTART: "Restart (không build)",
-      REBUILD: "Rebuild image (không Maven)",
-      MAVEN_REBUILD: "Maven + rebuild"
+    if (isOps) return;
+    const meta = {
+      STOP: { title: "Stop container?", danger: true, confirmLabel: "Stop" },
+      START: { title: "Start container?", danger: false, confirmLabel: "Start" },
+      RESTART: { title: "Restart service?", danger: false, confirmLabel: "Restart" },
+      REBUILD: { title: "Rebuild image?", danger: false, confirmLabel: "Rebuild" },
+      MAVEN_REBUILD: { title: "Maven + rebuild?", danger: false, confirmLabel: "Chạy" }
     };
-    if (!window.confirm(`${labels[action] || action} — ${id}?`)) return;
+    const m = meta[action] || { title: action, confirmLabel: "Xác nhận", danger: false };
+    const ok = await confirm({
+      title: m.title,
+      message: `${action} trên “${svc?.displayName || id}”. Ops không bị ảnh hưởng.`,
+      confirmLabel: m.confirmLabel,
+      cancelLabel: "Huỷ",
+      danger: m.danger
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const job = await postServiceAction(id, action);
+      toast({ title: "Đã gửi job", message: `${action} ${id} · #${job.id}`, variant: "ok" });
       navigate(`/jobs/${job.id}`);
     } catch (e) {
       setError(e.message);
+      toast({ title: "Lỗi", message: e.message, variant: "error" });
     } finally {
       setBusy(false);
     }
   };
 
   if (!svc && !error) return <p className="muted">Đang tải service...</p>;
+
+  const down = svc && (svc.status === "DOWN" || svc.status === "STOPPED");
 
   return (
     <section className="detail-page">
@@ -86,31 +106,47 @@ export default function ServiceDetailPage() {
             {svc?.composeService}
             {svc?.port != null ? ` · port ${svc.port}` : ""}
             {svc?.containerName ? ` · ${svc.containerName}` : ""}
-            {svc?.mavenModule ? ` · ${svc.mavenModule}` : ""}
           </p>
         </div>
         <div className="row gap wrap">
           {svc && <StatusPill status={svc.status} />}
-          <button type="button" className="btn" disabled={busy || id === "ops-api"} onClick={() => runAction("RESTART")}>
-            Restart
-          </button>
-          <button type="button" className="btn ghost" disabled={busy} onClick={() => runAction("REBUILD")}>
-            Rebuild
-          </button>
-          <button type="button" className="btn ghost" disabled={busy || !svc?.mavenModule} onClick={() => runAction("MAVEN_REBUILD")}>
-            Maven rebuild
-          </button>
-          <Link className="btn ghost" to={`/deploy?service=${id}`}>
-            Deploy…
-          </Link>
+          {!isOps && (
+            <>
+              <button type="button" className="btn danger" disabled={busy || down} onClick={() => runAction("STOP")}>
+                Stop
+              </button>
+              <button type="button" className="btn" disabled={busy} onClick={() => runAction("START")}>
+                Start
+              </button>
+              <button type="button" className="btn ghost" disabled={busy} onClick={() => runAction("RESTART")}>
+                Restart
+              </button>
+              <button type="button" className="btn ghost" disabled={busy} onClick={() => runAction("REBUILD")}>
+                Rebuild
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy || !svc?.mavenModule}
+                onClick={() => runAction("MAVEN_REBUILD")}
+              >
+                Maven rebuild
+              </button>
+            </>
+          )}
         </div>
       </header>
 
+      {isOps && (
+        <div className="banner warn">
+          Service Ops chỉ xem status & log. Không restart/stop/deploy từ đây — để console không sập khi đang quản lý stack.
+        </div>
+      )}
       {error && <div className="banner error">{error}</div>}
 
       <div className="log-toolbar">
-        <strong>Logs trực tiếp</strong>
-        <input placeholder="Lọc text / cid..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+        <strong>Logs</strong>
+        <input placeholder="Lọc text..." value={filter} onChange={(e) => setFilter(e.target.value)} />
         <select value={tail} onChange={(e) => setTail(Number(e.target.value))}>
           <option value={200}>200 dòng</option>
           <option value={500}>500 dòng</option>
@@ -125,9 +161,6 @@ export default function ServiceDetailPage() {
       <pre className="log-view log-view-xl" ref={preRef}>
         {text || "Đang tải log..."}
       </pre>
-      <p className="muted tiny">
-        Tự làm mới 2s · {paused ? "đã tạm dừng" : "đang chạy"} · tối đa {tail} dòng
-      </p>
     </section>
   );
 }

@@ -23,9 +23,10 @@ public class SecurityConfig {
                         .accessDeniedHandler(JsonAuthHandlers.forbidden()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/admin/orders/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/orders/**").hasAnyRole("ADMIN", "PLATFORM_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/seller").hasAnyRole("SELLER", "ADMIN", "PLATFORM_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/orders/**").authenticated()
-                        .requestMatchers("/api/orders/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "SELLER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

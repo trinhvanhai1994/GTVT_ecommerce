@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
           <div className="banner ok">
             <strong>Đã xử lý yêu cầu</strong>
             <span>
-              Nếu email tồn tại, hãy kiểm tra hộp thư (hoặc log mock khi mail tắt). Sau đó mở liên kết để đặt mật khẩu mới.
+              Nếu email đã đăng ký, hãy kiểm tra hộp thư và mở liên kết để đặt mật khẩu mới.
             </span>
           </div>
         )}

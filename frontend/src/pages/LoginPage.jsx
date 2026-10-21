@@ -9,9 +9,8 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const fromAdmin = location.state?.from === "/admin";
-  const [email, setEmail] = useState(location.state?.email || (fromAdmin ? "admin@example.com" : "customer@example.com"));
-  const [password, setPassword] = useState(location.state?.registeredOk || location.state?.resetOk ? "" : "Password123");
+  const [email, setEmail] = useState(location.state?.email || "");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,9 +21,13 @@ export default function LoginPage() {
     try {
       const user = await login(email, password);
       const role = String(user.role || "").toUpperCase();
-      if (role === "ADMIN") {
+      if (role === "ADMIN" || role === "PLATFORM_ADMIN") {
         clearPendingCart();
         navigate(location.state?.from?.startsWith("/admin") ? location.state.from : "/admin", { replace: true });
+        return;
+      }
+      if (role === "SELLER" && (location.state?.from || "").startsWith("/seller")) {
+        navigate("/seller", { replace: true });
         return;
       }
       const pending = readPendingCart();
@@ -38,7 +41,7 @@ export default function LoginPage() {
           clearPendingCart();
         }
       }
-      const dest = location.state?.from || "/products";
+      const dest = location.state?.from || "/";
       navigate(dest, { replace: true });
     } catch (err) {
       setError(err);
@@ -53,10 +56,7 @@ export default function LoginPage() {
         <p className="eyebrow">Xin chào</p>
         <h1>{location.state?.intent === "cart" ? "Đăng nhập để thêm vào giỏ." : "Đăng nhập để mua và theo dõi đơn."}</h1>
         {location.state?.productName && <p className="lede">Sản phẩm: {location.state.productName}</p>}
-        <p className="muted">
-          Tài khoản demo: customer@example.com hoặc admin@example.com — mật khẩu Password123. Quên mật khẩu? Dùng liên kết
-          bên dưới để nhận email đặt lại.
-        </p>
+        <p className="muted">Quên mật khẩu? Dùng liên kết bên dưới để nhận email đặt lại.</p>
       </div>
       <form className="form-card" onSubmit={onSubmit}>
         <h2>Đăng nhập</h2>
@@ -64,7 +64,7 @@ export default function LoginPage() {
         {location.state?.registeredOk && (
           <div className="banner ok">
             <strong>Tài khoản đã tạo</strong>
-            <span>Email chào mừng đã được gửi (nếu bật mail). Đăng nhập để bắt đầu mua sắm.</span>
+            <span>Đăng nhập để bắt đầu mua sắm trên Nava.</span>
           </div>
         )}
         {location.state?.resetOk && (
@@ -93,10 +93,10 @@ export default function LoginPage() {
           </Link>
         </div>
         <button className="btn btn-lg" disabled={loading}>
-          {loading ? "Đang vào..." : "Vào cửa hàng"}
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
         <p className="auth-links">
-          Chưa có tài khoản? <Link to="/register" state={location.state}>Tạo mới miễn phí</Link>
+          Chưa có tài khoản? <Link to="/register" state={location.state}>Tạo tài khoản miễn phí</Link>
         </p>
       </form>
     </section>

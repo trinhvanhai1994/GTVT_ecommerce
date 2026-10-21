@@ -15,7 +15,7 @@ function initials(user) {
 }
 
 export default function Layout() {
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, isSeller, isPlatformAdmin, user, logout } = useAuth();
   const { count } = useCart() || { count: 0 };
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +25,7 @@ export default function Layout() {
   const [notifyCount, setNotifyCount] = useState(0);
   const userMenuRef = useRef(null);
   const isAdminArea = location.pathname.startsWith("/admin");
+  const isSellerArea = location.pathname.startsWith("/seller");
 
   const displayName = useMemo(() => user?.fullName || user?.email || "Tài khoản", [user]);
 
@@ -50,7 +51,7 @@ export default function Layout() {
   }, [userOpen]);
 
   useEffect(() => {
-    if (!isAuthenticated || isAdmin) {
+    if (!isAuthenticated || isPlatformAdmin) {
       setNotifyCount(0);
       return;
     }
@@ -82,12 +83,11 @@ export default function Layout() {
       clearInterval(timer);
       window.removeEventListener("notify:seen", onSeen);
     };
-  }, [isAuthenticated, isAdmin, location.pathname, user?.id]);
+  }, [isAuthenticated, isPlatformAdmin, location.pathname, user?.id]);
 
   const search = (e) => {
     e.preventDefault();
-    const next = q.trim();
-    navigate(next ? `/products?keyword=${encodeURIComponent(next)}` : "/products");
+    navigate(q.trim() ? `/?q=${encodeURIComponent(q.trim())}` : "/");
     setMenuOpen(false);
   };
 
@@ -108,11 +108,11 @@ export default function Layout() {
             <span className="brand-mark">N</span>
             <span>
               Nava
-              <small>Cửa hàng công nghệ</small>
+              <small>Nhiều gian hàng · Một nơi mua sắm</small>
             </span>
           </Link>
 
-          {!isAdminArea && (
+          {!isAdminArea && !isSellerArea && (
             <form className="header-search" onSubmit={search}>
               <span className="search-icon">
                 <IconSearch />
@@ -120,8 +120,8 @@ export default function Layout() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Tìm điện thoại, laptop, tai nghe..."
-                aria-label="Tìm sản phẩm"
+                placeholder="Tìm cửa hàng…"
+                aria-label="Tìm cửa hàng"
               />
               <button type="submit">Tìm</button>
             </form>
@@ -130,24 +130,34 @@ export default function Layout() {
           <div className="header-tools">
             <nav className={menuOpen ? "main-nav open" : "main-nav"} aria-label="Điều hướng chính">
               {!isAdminArea && (
-                <NavLink to="/products" onClick={() => setMenuOpen(false)}>
-                  Sản phẩm
+                <NavLink to="/" onClick={() => setMenuOpen(false)}>
+                  Cửa hàng
                 </NavLink>
               )}
-              {isAuthenticated && !isAdmin && (
+              {isAuthenticated && !isPlatformAdmin && (
+                <NavLink to="/register-shop" onClick={() => setMenuOpen(false)}>
+                  Đăng ký bán
+                </NavLink>
+              )}
+              {isSeller && (
+                <NavLink to="/seller" onClick={() => setMenuOpen(false)}>
+                  Kênh người bán
+                </NavLink>
+              )}
+              {isAuthenticated && !isPlatformAdmin && (
                 <NavLink to="/orders" onClick={() => setMenuOpen(false)}>
                   Đơn hàng
                 </NavLink>
               )}
-              {isAdmin && (
+              {isPlatformAdmin && (
                 <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
-                  Quản trị
+                  Quản trị sàn
                 </NavLink>
               )}
             </nav>
 
             <div className="header-actions">
-              {isAuthenticated && !isAdmin && (
+              {isAuthenticated && !isPlatformAdmin && (
                 <>
                   <Link
                     to="/notifications"
@@ -191,7 +201,9 @@ export default function Layout() {
                     <span className="avatar-circle">{initials(user)}</span>
                     <span className="avatar-meta">
                       <span className="avatar-name">{displayName.split(" ").slice(-1)[0]}</span>
-                      <span className="avatar-role">{isAdmin ? "Admin" : "Khách"}</span>
+                      <span className="avatar-role">
+                        {isPlatformAdmin ? "Quản trị" : isSeller ? "Người bán" : "Khách"}
+                      </span>
                     </span>
                     <IconChevron />
                   </button>
@@ -204,7 +216,7 @@ export default function Layout() {
                       <Link role="menuitem" to="/profile" onClick={() => setUserOpen(false)}>
                         Hồ sơ của tôi
                       </Link>
-                      {!isAdmin && (
+                      {!isPlatformAdmin && (
                         <>
                           <Link role="menuitem" to="/orders" onClick={() => setUserOpen(false)}>
                             Đơn hàng
@@ -274,7 +286,7 @@ export default function Layout() {
         <div className="footer-grid">
           <div>
             <strong>Nava</strong>
-            <p>Cửa hàng điện tử một quầy — giao hàng toàn quốc, đổi trả 7 ngày.</p>
+            <p>Sàn thương mại điện tử nhiều gian hàng — giao hàng toàn quốc, đổi trả 7 ngày.</p>
           </div>
           <div>
             <strong>Hỗ trợ</strong>
@@ -291,7 +303,7 @@ export default function Layout() {
           </div>
           <div>
             <strong>Thanh toán &amp; email</strong>
-            <p>COD · Thẻ demo · Chuyển khoản demo</p>
+            <p>COD · Thẻ · Chuyển khoản</p>
             <p className="tiny">Email xác nhận đơn và cập nhật trạng thái tự động.</p>
           </div>
         </div>

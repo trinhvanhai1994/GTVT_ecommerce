@@ -24,8 +24,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/internal/inventory/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers("/api/inventory/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/inventory/**").hasAnyRole("ADMIN", "PLATFORM_ADMIN", "SELLER")
+                        .requestMatchers("/api/inventory/**").hasAnyRole("ADMIN", "PLATFORM_ADMIN", "SELLER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

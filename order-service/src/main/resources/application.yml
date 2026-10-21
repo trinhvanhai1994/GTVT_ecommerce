@@ -87,6 +87,8 @@ springdoc:
     path: /swagger-ui.html
 
 clients:
+  shop:
+    url: ${SHOP_SERVICE_URI:http://localhost:8089}
   product:
     url: ${PRODUCT_SERVICE_URI:http://localhost:8082}
   cart:

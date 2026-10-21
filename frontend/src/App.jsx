@@ -14,10 +14,13 @@ import NotificationsPage from "./pages/NotificationsPage.jsx";
 import OrderDetailPage from "./pages/OrderDetailPage.jsx";
 import OrderListPage from "./pages/OrderListPage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
-import ProductListPage from "./pages/ProductListPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
+import RegisterShopPage from "./pages/RegisterShopPage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
+import SellerPage from "./pages/SellerPage.jsx";
+import ShopLegacyRedirect from "./pages/ShopLegacyRedirect.jsx";
+import ShopProductListPage from "./pages/ShopProductListPage.jsx";
 
 export default function App() {
   return (
@@ -31,8 +34,26 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/products" element={<ProductListPage />} />
+          <Route path="/shops/:shopId" element={<ShopProductListPage />} />
+          <Route path="/shops/:shopId/products" element={<ShopLegacyRedirect />} />
+          <Route path="/shops/:shopId/products/:id" element={<ProductDetailPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route
+            path="/register-shop"
+            element={
+              <ProtectedRoute>
+                <RegisterShopPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seller"
+            element={
+              <ProtectedRoute role="SELLER">
+                <SellerPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/cart"
             element={
@@ -84,7 +105,7 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute role="ADMIN">
+              <ProtectedRoute role="PLATFORM_ADMIN">
                 <AdminPage />
               </ProtectedRoute>
             }

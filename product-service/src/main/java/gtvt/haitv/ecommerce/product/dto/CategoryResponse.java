@@ -10,12 +10,14 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CategoryResponse {
     private Long id;
+    private Long shopId;
     private String name;
     private String description;
 
     public static CategoryResponse from(Category c) {
         CategoryResponse r = new CategoryResponse();
         r.id = c.getId();
+        r.shopId = c.getShopId();
         r.name = c.getName();
         r.description = c.getDescription();
         return r;

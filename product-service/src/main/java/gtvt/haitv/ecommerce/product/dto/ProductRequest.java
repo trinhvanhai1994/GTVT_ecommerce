@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 public class ProductRequest {
+    @NotNull private Long shopId;
     @NotBlank private String name;
     private String description;
     @NotNull @DecimalMin("0.01") private BigDecimal price;

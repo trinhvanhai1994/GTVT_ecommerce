@@ -35,6 +35,7 @@ public class ProductController {
 
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> search(
+            @RequestParam(required = false, name = "shopId") Long shopId,
             @RequestParam(required = false, name = "keyword") String keyword,
             @RequestParam(required = false, name = "categoryId") Long categoryId,
             @RequestParam(required = false, name = "brand") String brand,
@@ -43,7 +44,7 @@ public class ProductController {
             @RequestParam(required = false, name = "status") String status,
             @RequestParam(defaultValue = "0", name = "page") int page,
             @RequestParam(defaultValue = "10", name = "size") int size) {
-        return ApiResponse.ok(service.search(keyword, categoryId, brand, minPrice, maxPrice, status, page, size));
+        return ApiResponse.ok(service.search(shopId, keyword, categoryId, brand, minPrice, maxPrice, status, page, size));
     }
 
     @GetMapping("/{id}")
@@ -69,8 +70,8 @@ public class ProductController {
     }
 
     @GetMapping("/categories")
-    public ApiResponse<List<CategoryResponse>> categories() {
-        return ApiResponse.ok(service.listCategories());
+    public ApiResponse<List<CategoryResponse>> categories(@RequestParam(name = "shopId") Long shopId) {
+        return ApiResponse.ok(service.listCategories(shopId));
     }
 
     @GetMapping("/categories/{id}")

@@ -109,6 +109,7 @@ services:
       ORDER_SERVICE_URI: http://order:8085
       PAYMENT_SERVICE_URI: http://payment:8086
       NOTIFICATION_SERVICE_URI: http://notification:8087
+      SHOP_SERVICE_URI: http://shop:8089
     depends_on:
       - eureka
       - auth
@@ -118,6 +119,31 @@ services:
       - order
       - payment
       - notification
+      - shop
+    restart: unless-stopped
+
+  shop:
+    build:
+      <<: *jvm-build
+      args:
+        MODULE: shop-service
+    image: gtvt-ecommerce-shop
+    container_name: ecommerce-shop
+    environment:
+      <<: *db-env
+      SERVER_PORT: 8089
+      ADMIN_INSTANCE_BASE_URL: http://shop:8089
+      AUTH_SERVICE_URI: http://auth:8081
+    ports:
+      # Host 8091 — avoid clash with other stacks on 8089
+      - "8091:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      auth:
+        condition: service_started
     restart: unless-stopped
 
   auth:
@@ -219,6 +245,7 @@ services:
       CART_SERVICE_URI: http://cart:8083
       INVENTORY_SERVICE_URI: http://inventory:8084
       PAYMENT_SERVICE_URI: http://payment:8086
+      SHOP_SERVICE_URI: http://shop:8089
     ports:
       - "8085:8085"
     depends_on:
@@ -228,6 +255,8 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      shop:
+        condition: service_started
     restart: unless-stopped
 
   payment:
@@ -295,7 +324,9 @@ services:
       - "8099:8099"
     environment:
       SERVER_PORT: 8099
-      OPS_REPO_ROOT: /workspace
+      # Same absolute path as on the Mac/Linux host so bind mounts in compose
+      # (e.g. ./docker/init-postgres.sql) resolve for the Docker daemon via the socket.
+      OPS_REPO_ROOT: ${PWD}
       OPS_DEPLOY_SCRIPT: scripts/ops-deploy.sh
       OPS_JOBS_DIR: data/jobs
       OPS_DOCKER_NETWORK: "true"
@@ -304,8 +335,8 @@ services:
       OPS_PASSWORD: ${OPS_PASSWORD:-abc123}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - .:/workspace
-    working_dir: /workspace
+      - ${PWD}:${PWD}
+    working_dir: ${PWD}
     restart: unless-stopped
 
   ops-ui:

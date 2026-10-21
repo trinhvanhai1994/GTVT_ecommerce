@@ -12,9 +12,9 @@ export default function CheckoutPage() {
   const { cart, refresh } = useCart();
   const [form, setForm] = useState({
     shippingName: user?.fullName || "",
-    shippingPhone: "0900000000",
-    shippingAddress: "Hà Nội",
-    paymentMethod: "MOCK_CARD",
+    shippingPhone: "",
+    shippingAddress: "",
+    paymentMethod: "COD",
     simulatePaymentFailure: false
   });
   const [error, setError] = useState(null);
@@ -32,7 +32,11 @@ export default function CheckoutPage() {
     try {
       const { data } = await api.post("/orders", form);
       await refresh();
-      navigate(`/orders/${data.data.id}`, { state: { result: data.data, justPlaced: true } });
+      const orders = Array.isArray(data.data) ? data.data : [data.data];
+      const first = orders[0];
+      navigate(first ? `/orders/${first.id}` : "/orders", {
+        state: { results: orders, result: first, justPlaced: true }
+      });
     } catch (err) {
       setError(err);
     } finally {
@@ -69,18 +73,10 @@ export default function CheckoutPage() {
         <label>
           Phương thức thanh toán
           <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
-            <option value="MOCK_CARD">Thẻ (demo)</option>
-            <option value="MOCK_BANKING">Chuyển khoản (demo)</option>
             <option value="COD">Thanh toán khi nhận hàng</option>
+            <option value="MOCK_CARD">Thẻ</option>
+            <option value="MOCK_BANKING">Chuyển khoản</option>
           </select>
-        </label>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={form.simulatePaymentFailure}
-            onChange={(e) => setForm({ ...form, simulatePaymentFailure: e.target.checked })}
-          />
-          Mô phỏng thanh toán thất bại (demo hoàn kho)
         </label>
         <button className="btn btn-lg" disabled={submitting || !items.length}>
           {submitting ? "Đang đặt hàng..." : "Đặt hàng"}
@@ -88,16 +84,15 @@ export default function CheckoutPage() {
       </form>
       <aside className="summary-card">
         <h2>Đơn của bạn</h2>
-        <p className="muted">{items.length} dòng hàng</p>
+        <p className="muted">{items.length} mặt hàng trong giỏ</p>
         <p className="summary-row">
-          <span>Sản phẩm trong giỏ</span>
+          <span>Số lượng sản phẩm</span>
           <strong>{items.reduce((s, i) => s + i.quantity, 0)}</strong>
         </p>
-        <p className="muted">Giá chốt tại thời điểm đặt — không đổi nếu giá catalog thay đổi sau đó.</p>
+        <p className="muted">Giá được chốt tại thời điểm đặt hàng.</p>
         <hr className="soft-rule" />
         <p className="muted">
-          Sau khi thanh toán thành công bạn sẽ nhận email xác nhận và có thể theo dõi tiến trình trong mục Đơn hàng / Thông
-          báo.
+          Sau khi đặt hàng thành công, bạn sẽ nhận email xác nhận và có thể theo dõi tiến trình trong mục Đơn hàng.
         </p>
       </aside>
     </section>

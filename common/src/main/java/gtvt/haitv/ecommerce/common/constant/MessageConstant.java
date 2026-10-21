@@ -27,6 +27,7 @@ public final class MessageConstant {
     public static final String CATEGORY_EXISTS = "Danh mục đã tồn tại.";
     public static final String CATEGORY_NOT_FOUND = "Không tìm thấy danh mục.";
     public static final String PRODUCT_NOT_FOUND = "Không tìm thấy sản phẩm.";
+    public static final String SHOP_NOT_FOUND = "Không tìm thấy cửa hàng.";
     public static final String PRODUCT_SERVICE_ERROR = "Không kiểm tra được sản phẩm. Vui lòng thử lại.";
 
     // --- Cart / order / payment / inventory ---

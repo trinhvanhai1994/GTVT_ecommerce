@@ -37,6 +37,7 @@ class ProductApiTests {
     @Test
     void crudSearchAndNotFound() throws Exception {
         CategoryRequest cat = new CategoryRequest();
+        cat.setShopId(1L);
         cat.setName("Gadgets");
         String catJson = mockMvc.perform(post("/api/products/categories").header("Authorization", adminToken())
                         .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(cat)))
@@ -45,6 +46,7 @@ class ProductApiTests {
         long catId = objectMapper.readTree(catJson).path("data").path("id").asLong();
 
         ProductRequest pr = new ProductRequest();
+        pr.setShopId(1L);
         pr.setName("Gadget One");
         pr.setDescription("desc");
         pr.setPrice(new BigDecimal("10.00"));

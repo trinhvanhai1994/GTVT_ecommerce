@@ -32,11 +32,14 @@ public interface CartClient {
     class RemoteItem {
         private Long id;
         private Long productId;
+        private Long shopId;
         private int quantity;
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
+        public Long getShopId() { return shopId; }
+        public void setShopId(Long shopId) { this.shopId = shopId; }
         public int getQuantity() { return quantity; }
         public void setQuantity(int quantity) { this.quantity = quantity; }
     }

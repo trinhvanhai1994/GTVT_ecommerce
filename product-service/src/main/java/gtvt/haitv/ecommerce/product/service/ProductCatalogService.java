@@ -4,13 +4,15 @@ import gtvt.haitv.ecommerce.common.constant.ErrorConstant;
 import gtvt.haitv.ecommerce.common.constant.MessageConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
-import gtvt.haitv.ecommerce.product.entity.Category;
-import gtvt.haitv.ecommerce.product.entity.Product;
+import gtvt.haitv.ecommerce.common.security.SecurityUtils;
+import gtvt.haitv.ecommerce.product.client.ShopClient;
 import gtvt.haitv.ecommerce.product.dto.CategoryRequest;
 import gtvt.haitv.ecommerce.product.dto.CategoryResponse;
 import gtvt.haitv.ecommerce.product.dto.PageResponse;
 import gtvt.haitv.ecommerce.product.dto.ProductRequest;
 import gtvt.haitv.ecommerce.product.dto.ProductResponse;
+import gtvt.haitv.ecommerce.product.entity.Category;
+import gtvt.haitv.ecommerce.product.entity.Product;
 import gtvt.haitv.ecommerce.product.repository.CategoryRepository;
 import gtvt.haitv.ecommerce.product.repository.ProductRepository;
 import org.springframework.data.domain.Page;
@@ -23,91 +25,73 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductCatalogService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ShopClient shopClient;
 
-    public ProductCatalogService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductCatalogService(ProductRepository productRepository, CategoryRepository categoryRepository,
+                                 ShopClient shopClient) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.shopClient = shopClient;
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> listCategories() {
-        FlowLog f = FlowLog.start("listCategories");
-        var list = categoryRepository.findAll().stream().map(CategoryResponse::from).toList();
-        f.end("n=" + list.size());
-        return list;
+    public List<CategoryResponse> listCategories(Long shopId) {
+        if (shopId == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "shopId is required");
+        }
+        return categoryRepository.findByShopIdOrderByNameAsc(shopId).stream().map(CategoryResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
     public CategoryResponse getCategory(Long id) {
-        FlowLog f = FlowLog.start("getCategory");
-        try {
-            CategoryResponse r = CategoryResponse.from(category(id));
-            f.end("id=" + id);
-            return r;
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
-        }
+        return CategoryResponse.from(category(id));
     }
 
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
-        FlowLog f = FlowLog.start("createCategory");
-        try {
-            if (categoryRepository.existsByNameIgnoreCase(request.getName())) {
-                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.CATEGORY_EXISTS, MessageConstant.CATEGORY_EXISTS);
-            }
-            Category c = new Category();
-            c.setName(request.getName());
-            c.setDescription(request.getDescription());
-            CategoryResponse r = CategoryResponse.from(categoryRepository.save(c));
-            f.end("id=" + r.getId());
-            return r;
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
+        requireShopAccess(request.getShopId());
+        if (categoryRepository.existsByShopIdAndNameIgnoreCase(request.getShopId(), request.getName())) {
+            throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.CATEGORY_EXISTS, MessageConstant.CATEGORY_EXISTS);
         }
+        Category c = new Category();
+        c.setShopId(request.getShopId());
+        c.setName(request.getName());
+        c.setDescription(request.getDescription());
+        return CategoryResponse.from(categoryRepository.save(c));
     }
 
     @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
-        FlowLog f = FlowLog.start("updateCategory");
-        try {
-            Category c = category(id);
-            c.setName(request.getName());
-            c.setDescription(request.getDescription());
-            f.end("id=" + id);
-            return CategoryResponse.from(c);
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
-        }
+        Category c = category(id);
+        requireShopAccess(c.getShopId());
+        c.setName(request.getName());
+        c.setDescription(request.getDescription());
+        return CategoryResponse.from(c);
     }
 
     @Transactional
     public void deleteCategory(Long id) {
-        FlowLog f = FlowLog.start("deleteCategory");
-        try {
-            categoryRepository.delete(category(id));
-            f.end("id=" + id);
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
-        }
+        Category c = category(id);
+        requireShopAccess(c.getShopId());
+        categoryRepository.delete(c);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductResponse> search(String keyword, Long categoryId, String brand,
+    public PageResponse<ProductResponse> search(Long shopId, String keyword, Long categoryId, String brand,
                                                 BigDecimal minPrice, BigDecimal maxPrice, String status,
                                                 int page, int size) {
         FlowLog f = FlowLog.start("searchProducts");
         Specification<Product> spec = (root, q, cb) -> cb.conjunction();
+        if (shopId != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("shopId"), shopId));
+        }
         if (StringUtils.hasText(keyword)) {
             spec = spec.and((root, q, cb) -> cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
         }
@@ -133,61 +117,58 @@ public class ProductCatalogService {
 
     @Transactional(readOnly = true)
     public ProductResponse getProduct(Long id) {
-        FlowLog f = FlowLog.start("getProduct");
-        try {
-            ProductResponse r = ProductResponse.from(product(id));
-            f.end("id=" + id);
-            return r;
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
-        }
+        return ProductResponse.from(product(id));
     }
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
-        FlowLog f = FlowLog.start("createProduct");
-        try {
-            category(request.getCategoryId());
-            Product p = new Product();
-            apply(p, request);
-            ProductResponse r = ProductResponse.from(productRepository.save(p));
-            f.end("id=" + r.getId());
-            return r;
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
+        requireShopAccess(request.getShopId());
+        Category cat = category(request.getCategoryId());
+        if (!cat.getShopId().equals(request.getShopId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Category does not belong to shop");
         }
+        Product p = new Product();
+        apply(p, request);
+        return ProductResponse.from(productRepository.save(p));
     }
 
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest request) {
-        FlowLog f = FlowLog.start("updateProduct");
-        try {
-            Product p = product(id);
-            category(request.getCategoryId());
-            apply(p, request);
-            f.end("id=" + id);
-            return ProductResponse.from(p);
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
+        Product p = product(id);
+        requireShopAccess(p.getShopId());
+        Category cat = category(request.getCategoryId());
+        if (!cat.getShopId().equals(p.getShopId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Category does not belong to shop");
         }
+        apply(p, request);
+        p.setShopId(p.getShopId());
+        return ProductResponse.from(p);
     }
 
     @Transactional
     public void deleteProduct(Long id) {
-        FlowLog f = FlowLog.start("deleteProduct");
-        try {
-            productRepository.delete(product(id));
-            f.end("id=" + id);
-        } catch (RuntimeException e) {
-            f.fail(e);
-            throw e;
+        Product p = product(id);
+        requireShopAccess(p.getShopId());
+        productRepository.delete(p);
+    }
+
+    private void requireShopAccess(Long shopId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        Long userId = SecurityUtils.currentUserId();
+        Map<String, Boolean> member = shopClient.member(shopId, userId).getData();
+        if (member == null || !Boolean.TRUE.equals(member.get("member"))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
+        }
+        Map<String, Boolean> approved = shopClient.approved(shopId).getData();
+        if (approved == null || !Boolean.TRUE.equals(approved.get("approved"))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Shop is not approved");
         }
     }
 
     private void apply(Product p, ProductRequest request) {
+        p.setShopId(request.getShopId());
         p.setName(request.getName());
         p.setDescription(request.getDescription());
         p.setPrice(request.getPrice());

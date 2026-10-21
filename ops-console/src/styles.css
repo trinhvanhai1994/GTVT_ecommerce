@@ -208,6 +208,65 @@ h3 { margin: 0; }
 
 .btn.ghost { background: transparent; }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.btn.danger { background: #a12828; color: #fff; border-color: #a12828; font-weight: 600; }
+.btn.danger:disabled { opacity: 0.45; }
+.banner.warn {
+  background: #fff3d6; color: var(--warn); padding: 12px 14px; border-radius: 12px;
+}
+
+/* App dialogs / toasts — thay window.alert / window.confirm */
+.ui-modal-root {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center;
+  padding: 20px;
+  background: rgba(16, 26, 20, 0.55);
+  backdrop-filter: blur(4px);
+  animation: ui-fade 0.16s ease;
+}
+.ui-modal {
+  width: min(420px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(16, 26, 20, 0.22);
+  padding: 22px 22px 18px;
+  display: grid; gap: 10px;
+  animation: ui-pop 0.18s ease;
+}
+.ui-modal-eyebrow {
+  margin: 0; text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 0.72rem; color: var(--muted); font-weight: 600;
+}
+.ui-modal h2 {
+  margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em;
+}
+.ui-modal-msg { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+.ui-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ui-modal.danger .ui-modal-eyebrow { color: var(--danger); }
+.ui-toast-stack {
+  position: fixed; top: 18px; right: 18px; z-index: 110;
+  display: grid; gap: 10px; width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.ui-toast {
+  pointer-events: auto;
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 12px 12px 14px; box-shadow: 0 12px 32px rgba(16, 26, 20, 0.14);
+  animation: ui-slide 0.2s ease;
+}
+.ui-toast.v-ok { border-color: #9ecfb3; background: #eef8f1; }
+.ui-toast.v-error { border-color: #e0a0a0; background: #fdf1f1; }
+.ui-toast.v-info { border-color: #b7cfc0; }
+.ui-toast-body { display: grid; gap: 2px; font-size: 0.92rem; }
+.ui-toast-body strong { font-size: 0.88rem; }
+.ui-toast-close {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 1.2rem; line-height: 1; padding: 0 4px;
+}
+@keyframes ui-fade { from { opacity: 0; } }
+@keyframes ui-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes ui-slide { from { opacity: 0; transform: translateX(12px); } }
 .row { display: flex; align-items: center; }
 .gap { gap: 8px; }
 .wrap { flex-wrap: wrap; }

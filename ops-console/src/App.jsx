@@ -7,6 +7,7 @@ import LogsPage from "./pages/LogsPage.jsx";
 import DeployPage from "./pages/DeployPage.jsx";
 import JobsPage from "./pages/JobsPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import { DialogProvider } from "./context/DialogContext.jsx";
 import { clearCreds, fetchServices, getCreds, isAuthenticated } from "./api.js";
 
 function RequireAuth({ children }) {
@@ -47,7 +48,7 @@ function Shell() {
     { key: "infra", label: "Hạ tầng" },
     { key: "app", label: "Ứng dụng" },
     { key: "ui", label: "Giao diện" },
-    { key: "ops", label: "Ops" }
+    { key: "ops", label: "Ops (chỉ xem)" }
   ];
 
   return (
@@ -68,7 +69,6 @@ function Shell() {
           <NavLink to="/services">Tất cả service</NavLink>
           <NavLink to="/deploy">Deploy</NavLink>
           <NavLink to="/jobs">Jobs</NavLink>
-          <NavLink to="/logs">Logs nhanh</NavLink>
         </nav>
 
         <div className="svc-nav">
@@ -143,19 +143,21 @@ function Shell() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />}
-      />
-      <Route
-        path="/*"
-        element={
-          <RequireAuth>
-            <Shell />
-          </RequireAuth>
-        }
-      />
-    </Routes>
+    <DialogProvider>
+      <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/*"
+          element={
+            <RequireAuth>
+              <Shell />
+            </RequireAuth>
+          }
+        />
+      </Routes>
+    </DialogProvider>
   );
 }

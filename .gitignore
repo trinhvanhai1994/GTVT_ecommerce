@@ -49,6 +49,8 @@ Thumbs.db
 logs/
 
 # Build
+build/docx-export/
+build/puppeteer-cache/
 *.class
 *.jar
 !**/src/main/resources/**/*.jar

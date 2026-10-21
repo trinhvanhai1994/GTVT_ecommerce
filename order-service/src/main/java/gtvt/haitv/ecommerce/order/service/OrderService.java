@@ -12,6 +12,7 @@ import gtvt.haitv.ecommerce.order.client.CartClient;
 import gtvt.haitv.ecommerce.order.client.InventoryClient;
 import gtvt.haitv.ecommerce.order.client.PaymentClient;
 import gtvt.haitv.ecommerce.order.client.ProductClient;
+import gtvt.haitv.ecommerce.order.client.ShopClient;
 import gtvt.haitv.ecommerce.order.entity.Order;
 import gtvt.haitv.ecommerce.order.entity.OrderItem;
 import gtvt.haitv.ecommerce.order.dto.CheckoutRequest;
@@ -23,8 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -39,114 +44,156 @@ public class OrderService {
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
     private final PaymentClient paymentClient;
+    private final ShopClient shopClient;
     private final OrderEventPublisher eventPublisher;
 
     public OrderService(OrderRepository orderRepository, CartClient cartClient, ProductClient productClient,
-                        InventoryClient inventoryClient, PaymentClient paymentClient, OrderEventPublisher eventPublisher) {
+                        InventoryClient inventoryClient, PaymentClient paymentClient, ShopClient shopClient,
+                        OrderEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.cartClient = cartClient;
         this.productClient = productClient;
         this.inventoryClient = inventoryClient;
         this.paymentClient = paymentClient;
+        this.shopClient = shopClient;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional
-    public OrderResponse checkout(Long userId, String customerEmail, CheckoutRequest request) {
+    public List<OrderResponse> checkout(Long userId, String customerEmail, CheckoutRequest request) {
         FlowLog f = FlowLog.start("checkout");
         try {
-            f.step("cart");
             CartClient.RemoteCart cart = cartClient.getCart(userId).getData();
             if (cart == null || cart.getItems() == null || cart.getItems().isEmpty()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.CART_EMPTY, MessageConstant.CART_EMPTY);
             }
-            f.step("items=" + cart.getItems().size());
+            Map<Long, List<CartClient.RemoteItem>> byShop = cart.getItems().stream()
+                    .collect(Collectors.groupingBy(item -> {
+                        Long shopId = item.getShopId();
+                        if (shopId == null) {
+                            ProductClient.RemoteProduct p = productClient.getProduct(item.getProductId()).getData();
+                            if (p == null || p.getShopId() == null) {
+                                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Missing shopId on cart item");
+                            }
+                            return p.getShopId();
+                        }
+                        return shopId;
+                    }, LinkedHashMap::new, Collectors.toList()));
 
-            Order order = new Order();
-            order.setUserId(userId);
-            order.setCustomerEmail(customerEmail);
-            order.setStatus(AppConstant.ORDER_PAYMENT_PENDING);
-            order.setShippingName(request.getShippingName());
-            order.setShippingPhone(request.getShippingPhone());
-            order.setShippingAddress(request.getShippingAddress());
-            order.setPaymentMethod(request.getPaymentMethod());
-            BigDecimal total = BigDecimal.ZERO;
-            InventoryClient.StockItemsRequest stockReq = new InventoryClient.StockItemsRequest();
-
-            for (CartClient.RemoteItem cartItem : cart.getItems()) {
-                ProductClient.RemoteProduct product = productClient.getProduct(cartItem.getProductId()).getData();
-                if (product == null || !AppConstant.STATUS_ACTIVE.equals(product.getStatus())) {
-                    throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
+            List<OrderResponse> results = new ArrayList<>();
+            boolean anySuccess = false;
+            for (Map.Entry<Long, List<CartClient.RemoteItem>> entry : byShop.entrySet()) {
+                results.add(checkoutOneShop(userId, customerEmail, request, entry.getKey(), entry.getValue()));
+                if ("CONFIRMED".equals(results.get(results.size() - 1).getStatus())) {
+                    anySuccess = true;
                 }
-                OrderItem item = new OrderItem();
-                item.setOrder(order);
-                item.setProductId(product.getId());
-                item.setProductName(product.getName());
-                item.setQuantity(cartItem.getQuantity());
-                item.setUnitPrice(product.getPrice());
-                item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-                order.getItems().add(item);
-                total = total.add(item.getSubtotal());
-                stockReq.getItems().add(new InventoryClient.Item(product.getId(), cartItem.getQuantity()));
             }
-            order.setTotalAmount(total);
-            f.step("products ok total=" + total);
-
-            InventoryClient.CheckResponse check = inventoryClient.check(stockReq).getData();
-            if (check == null || !check.isAvailable()) {
-                throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.INSUFFICIENT_STOCK, MessageConstant.INSUFFICIENT_STOCK);
+            if (anySuccess) {
+                try {
+                    cartClient.clearCart(userId);
+                } catch (Exception ignored) {
+                    // best-effort
+                }
             }
-            f.step("stock ok");
-
-            orderRepository.save(order);
-            inventoryClient.reserve(stockReq);
-            f.step("saved+reserve orderId=" + order.getId());
-            publish(order, OrderEvent.ORDER_CREATED, "Order created", "Order #" + order.getId() + " created");
-
-            PaymentClient.CreatePaymentRequest payReq = new PaymentClient.CreatePaymentRequest();
-            payReq.setOrderId(order.getId());
-            payReq.setUserId(userId);
-            payReq.setAmount(total);
-            payReq.setMethod(request.getPaymentMethod());
-            payReq.setSimulateFailure(request.isSimulatePaymentFailure());
-
-            PaymentClient.RemotePayment payment;
-            try {
-                f.step("payment");
-                payment = paymentClient.charge(payReq).getData();
-            } catch (FeignException ex) {
-                compensate(order, stockReq, null);
-                f.fail("PAYMENT_SERVICE_ERROR");
-                throw new ApiException(HttpStatus.BAD_GATEWAY, ErrorConstant.PAYMENT_SERVICE_ERROR, MessageConstant.PAYMENT_SERVICE_ERROR);
-            }
-
-            if (payment != null && "SUCCESS".equals(payment.getStatus())) {
-                inventoryClient.deduct(stockReq);
-                order.setStatus("CONFIRMED");
-                cartClient.clearCart(userId);
-                publish(order, OrderEvent.PAYMENT_SUCCESS, "Payment success",
-                        "Payment succeeded for order #" + order.getId());
-                publish(order, OrderEvent.ORDER_CONFIRMED, "Order confirmed",
-                        "Order #" + order.getId() + " confirmed. Total: " + order.getTotalAmount());
-                OrderResponse response = OrderResponse.from(order);
-                response.setPayment(new OrderResponse.PaymentSnapshot(payment.getId(), payment.getStatus()));
-                f.end("CONFIRMED orderId=" + order.getId());
-                return response;
-            }
-            f.step("payment FAIL compensate");
-            compensate(order, stockReq, payment);
-            OrderResponse response = OrderResponse.from(order);
-            if (payment != null) {
-                response.setPayment(new OrderResponse.PaymentSnapshot(payment.getId(), payment.getStatus()));
-            }
-            f.end("PAYMENT_FAILED orderId=" + order.getId());
-            return response;
+            f.end("orders=" + results.size());
+            return results;
         } catch (RuntimeException e) {
             if (!(e instanceof ApiException api && ErrorConstant.PAYMENT_SERVICE_ERROR.equals(api.getCode()))) {
                 f.fail(e);
             }
             throw e;
         }
+    }
+
+    private OrderResponse checkoutOneShop(Long userId, String customerEmail, CheckoutRequest request,
+                                          Long shopId, List<CartClient.RemoteItem> items) {
+        String shopName = "Shop #" + shopId;
+        try {
+            ShopClient.RemoteShop shop = shopClient.getById(shopId).getData();
+            if (shop != null && shop.getName() != null) {
+                shopName = shop.getName();
+            }
+            if (shop != null && !AppConstant.SHOP_APPROVED.equals(shop.getStatus())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Shop is not approved");
+            }
+        } catch (ApiException ex) {
+            throw ex;
+        } catch (Exception ignored) {
+            // keep default name
+        }
+
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setShopId(shopId);
+        order.setShopName(shopName);
+        order.setCustomerEmail(customerEmail);
+        order.setStatus(AppConstant.ORDER_PAYMENT_PENDING);
+        order.setShippingName(request.getShippingName());
+        order.setShippingPhone(request.getShippingPhone());
+        order.setShippingAddress(request.getShippingAddress());
+        order.setPaymentMethod(request.getPaymentMethod());
+        BigDecimal total = BigDecimal.ZERO;
+        InventoryClient.StockItemsRequest stockReq = new InventoryClient.StockItemsRequest();
+
+        for (CartClient.RemoteItem cartItem : items) {
+            ProductClient.RemoteProduct product = productClient.getProduct(cartItem.getProductId()).getData();
+            if (product == null || !AppConstant.STATUS_ACTIVE.equals(product.getStatus())) {
+                throw new ApiException(HttpStatus.NOT_FOUND, ErrorConstant.PRODUCT_NOT_FOUND, MessageConstant.PRODUCT_NOT_FOUND);
+            }
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setProductId(product.getId());
+            item.setProductName(product.getName());
+            item.setQuantity(cartItem.getQuantity());
+            item.setUnitPrice(product.getPrice());
+            item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            order.getItems().add(item);
+            total = total.add(item.getSubtotal());
+            stockReq.getItems().add(new InventoryClient.Item(product.getId(), cartItem.getQuantity()));
+        }
+        order.setTotalAmount(total);
+
+        InventoryClient.CheckResponse check = inventoryClient.check(stockReq).getData();
+        if (check == null || !check.isAvailable()) {
+            throw new ApiException(HttpStatus.CONFLICT, ErrorConstant.INSUFFICIENT_STOCK, MessageConstant.INSUFFICIENT_STOCK);
+        }
+
+        orderRepository.save(order);
+        inventoryClient.reserve(stockReq);
+        publish(order, OrderEvent.ORDER_CREATED, "Order created", "Order #" + order.getId() + " created");
+
+        PaymentClient.CreatePaymentRequest payReq = new PaymentClient.CreatePaymentRequest();
+        payReq.setOrderId(order.getId());
+        payReq.setUserId(userId);
+        payReq.setAmount(total);
+        payReq.setMethod(request.getPaymentMethod());
+        payReq.setSimulateFailure(request.isSimulatePaymentFailure());
+
+        PaymentClient.RemotePayment payment;
+        try {
+            payment = paymentClient.charge(payReq).getData();
+        } catch (FeignException ex) {
+            compensate(order, stockReq, null);
+            throw new ApiException(HttpStatus.BAD_GATEWAY, ErrorConstant.PAYMENT_SERVICE_ERROR, MessageConstant.PAYMENT_SERVICE_ERROR);
+        }
+
+        if (payment != null && "SUCCESS".equals(payment.getStatus())) {
+            inventoryClient.deduct(stockReq);
+            order.setStatus("CONFIRMED");
+            publish(order, OrderEvent.PAYMENT_SUCCESS, "Payment success",
+                    "Payment succeeded for order #" + order.getId());
+            publish(order, OrderEvent.ORDER_CONFIRMED, "Order confirmed",
+                    "Order #" + order.getId() + " confirmed. Total: " + order.getTotalAmount());
+            OrderResponse response = OrderResponse.from(order);
+            response.setPayment(new OrderResponse.PaymentSnapshot(payment.getId(), payment.getStatus()));
+            return response;
+        }
+        compensate(order, stockReq, payment);
+        OrderResponse response = OrderResponse.from(order);
+        if (payment != null) {
+            response.setPayment(new OrderResponse.PaymentSnapshot(payment.getId(), payment.getStatus()));
+        }
+        return response;
     }
 
     private void compensate(Order order, InventoryClient.StockItemsRequest stockReq, PaymentClient.RemotePayment payment) {
@@ -221,6 +268,11 @@ public class OrderService {
 
     private InventoryClient.StockItemsRequest newReleaseAsAvailable(Order order) {
         return toStock(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> sellerOrders(Long shopId) {
+        return orderRepository.findByShopIdOrderByIdDesc(shopId).stream().map(OrderResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
