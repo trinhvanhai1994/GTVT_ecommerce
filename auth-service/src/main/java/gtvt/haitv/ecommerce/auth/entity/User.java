@@ -46,6 +46,9 @@ public class User {
     @Column(name = "password_reset_expires")
     private Instant passwordResetExpires;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -63,6 +66,7 @@ public class User {
         if (role == null) {
             role = "CUSTOMER";
         }
+        // mustChangePassword defaults false for new column
     }
 
     @PreUpdate

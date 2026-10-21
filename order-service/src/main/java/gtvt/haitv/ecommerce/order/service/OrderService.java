@@ -17,6 +17,7 @@ import gtvt.haitv.ecommerce.order.entity.Order;
 import gtvt.haitv.ecommerce.order.entity.OrderItem;
 import gtvt.haitv.ecommerce.order.dto.CheckoutRequest;
 import gtvt.haitv.ecommerce.order.dto.OrderResponse;
+import gtvt.haitv.ecommerce.order.dto.SellerStatsResponse;
 import gtvt.haitv.ecommerce.order.messaging.OrderEventPublisher;
 import gtvt.haitv.ecommerce.order.repository.OrderRepository;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +42,13 @@ public class OrderService {
     private static final Set<String> ADMIN_STATUSES = Set.of(
             AppConstant.ORDER_PENDING, AppConstant.ORDER_PAYMENT_PENDING, AppConstant.ORDER_CONFIRMED, AppConstant.ORDER_PROCESSING,
             AppConstant.ORDER_SHIPPING, AppConstant.ORDER_DELIVERED, AppConstant.ORDER_CANCELLED, AppConstant.ORDER_PAYMENT_FAILED);
+    private static final Set<String> SELLER_FULFILLMENT_STATUSES = Set.of(
+            AppConstant.ORDER_PROCESSING, AppConstant.ORDER_SHIPPING, AppConstant.ORDER_DELIVERED);
+    private static final Set<String> REVENUE_STATUSES = Set.of(
+            AppConstant.ORDER_CONFIRMED, AppConstant.ORDER_PROCESSING, AppConstant.ORDER_SHIPPING, AppConstant.ORDER_DELIVERED);
+    private static final Set<String> OPEN_ORDER_STATUSES = Set.of(
+            AppConstant.ORDER_PENDING, AppConstant.ORDER_PAYMENT_PENDING, AppConstant.ORDER_CONFIRMED,
+            AppConstant.ORDER_PROCESSING, AppConstant.ORDER_SHIPPING);
 
     private final OrderRepository orderRepository;
     private final CartClient cartClient;
@@ -272,7 +283,85 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> sellerOrders(Long shopId) {
+        requireShopMember(shopId);
         return orderRepository.findByShopIdOrderByIdDesc(shopId).stream().map(OrderResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SellerStatsResponse sellerStats(Long shopId, int days) {
+        requireShopMember(shopId);
+        int window = Math.min(Math.max(days, 1), 90);
+        Instant after = Instant.now().minusSeconds((long) window * 86400L);
+        List<Order> inWindow = orderRepository.findByShopIdAndCreatedAtAfterOrderByCreatedAtAsc(shopId, after);
+
+        SellerStatsResponse stats = new SellerStatsResponse();
+        SellerStatsResponse.Summary summary = stats.getSummary();
+        summary.setOrderCount(inWindow.size());
+        summary.setRevenue(inWindow.stream()
+                .filter(o -> REVENUE_STATUSES.contains(o.getStatus()))
+                .map(o -> o.getTotalAmount() != null ? o.getTotalAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setOpenOrders(inWindow.stream().filter(o -> OPEN_ORDER_STATUSES.contains(o.getStatus())).count());
+        summary.setCancelledCount(inWindow.stream().filter(o -> AppConstant.ORDER_CANCELLED.equals(o.getStatus())).count());
+
+        Map<LocalDate, List<Order>> byDay = inWindow.stream()
+                .filter(o -> o.getCreatedAt() != null)
+                .collect(Collectors.groupingBy(o -> LocalDate.ofInstant(o.getCreatedAt(), ZoneOffset.UTC), LinkedHashMap::new, Collectors.toList()));
+
+        LocalDate start = LocalDate.now(ZoneOffset.UTC).minusDays(window - 1L);
+        LocalDate end = LocalDate.now(ZoneOffset.UTC);
+        List<SellerStatsResponse.DayPoint> series = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            List<Order> dayOrders = byDay.getOrDefault(d, List.of());
+            BigDecimal dayRev = dayOrders.stream()
+                    .filter(o -> REVENUE_STATUSES.contains(o.getStatus()))
+                    .map(Order::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            series.add(new SellerStatsResponse.DayPoint(d.toString(), dayOrders.size(), dayRev));
+        }
+        stats.setSeries(series);
+        return stats;
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse sellerGet(Long id, Long shopId) {
+        requireShopMember(shopId);
+        Order order = order(id);
+        if (!shopId.equals(order.getShopId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
+        }
+        return OrderResponse.from(order);
+    }
+
+    @Transactional
+    public OrderResponse sellerStatus(Long id, Long shopId, String status) {
+        requireShopMember(shopId);
+        if (!SELLER_FULFILLMENT_STATUSES.contains(status)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.INVALID_STATUS);
+        }
+        Order order = order(id);
+        if (!shopId.equals(order.getShopId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
+        }
+        order.setStatus(status);
+        String eventType = switch (status) {
+            case "SHIPPING" -> OrderEvent.ORDER_SHIPPED;
+            case "DELIVERED" -> OrderEvent.ORDER_DELIVERED;
+            default -> OrderEvent.ORDER_STATUS_UPDATED;
+        };
+        publish(order, eventType, "Order status: " + status, "Order #" + order.getId() + " is now " + status);
+        return OrderResponse.from(order);
+    }
+
+    private void requireShopMember(Long shopId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        Long userId = SecurityUtils.currentUserId();
+        var member = shopClient.member(shopId, userId).getData();
+        if (member == null || !Boolean.TRUE.equals(member.get("member"))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, ErrorConstant.FORBIDDEN, MessageConstant.FORBIDDEN);
+        }
     }
 
     @Transactional(readOnly = true)

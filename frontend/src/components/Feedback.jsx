@@ -1,8 +1,8 @@
 import { MessageConstant } from "../constants";
 
-export function Loading({ text = "Đang tải..." }) {
+export function Loading({ text = "Đang tải...", className = "" }) {
   return (
-    <div className="skeleton-wrap" role="status">
+    <div className={`skeleton-wrap ${className}`.trim()} role="status">
       <div className="skeleton" />
       <div className="skeleton short" />
       <p className="muted">{text}</p>

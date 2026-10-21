@@ -3,6 +3,7 @@ package gtvt.haitv.ecommerce.inventory.controller;
 import gtvt.haitv.ecommerce.common.api.ApiResponse;
 import gtvt.haitv.ecommerce.inventory.dto.InventoryResponse;
 import gtvt.haitv.ecommerce.inventory.dto.UpdateStockRequest;
+import gtvt.haitv.ecommerce.inventory.service.InventoryAccessService;
 import gtvt.haitv.ecommerce.inventory.service.InventoryService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,9 +20,11 @@ import java.util.List;
 public class InventoryAdminController {
 
     private final InventoryService inventoryService;
+    private final InventoryAccessService accessService;
 
-    public InventoryAdminController(InventoryService inventoryService) {
+    public InventoryAdminController(InventoryService inventoryService, InventoryAccessService accessService) {
         this.inventoryService = inventoryService;
+        this.accessService = accessService;
     }
 
     @GetMapping
@@ -36,6 +39,7 @@ public class InventoryAdminController {
 
     @PutMapping("/{productId}")
     public ApiResponse<InventoryResponse> update(@PathVariable("productId") Long productId, @Valid @RequestBody UpdateStockRequest request) {
+        accessService.requireCanUpdateProduct(productId);
         return ApiResponse.ok(inventoryService.updateAvailable(productId, request.getAvailableQuantity()));
     }
 }

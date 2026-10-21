@@ -6,6 +6,8 @@ import api from "../services/api";
 import { countUnread, markNotificationsSeen } from "../utils/notifyRead";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { IconBell, IconCart, IconChevron, IconClose, IconMenu, IconSearch } from "./icons.jsx";
+import { resolveAppShell } from "../utils/appShell.js";
+import RoleBoundary from "./RoleBoundary.jsx";
 
 function initials(user) {
   const name = String(user?.fullName || user?.email || "?").trim();
@@ -24,8 +26,10 @@ export default function Layout() {
   const [userOpen, setUserOpen] = useState(false);
   const [notifyCount, setNotifyCount] = useState(0);
   const userMenuRef = useRef(null);
-  const isAdminArea = location.pathname.startsWith("/admin");
-  const isSellerArea = location.pathname.startsWith("/seller");
+  const appSkin = resolveAppShell(location.pathname);
+  const isPlatformShell = appSkin === "platform";
+  const isMerchantShell = appSkin === "merchant";
+  const isStorefrontShell = appSkin === "storefront";
 
   const displayName = useMemo(() => user?.fullName || user?.email || "Tài khoản", [user]);
 
@@ -51,7 +55,7 @@ export default function Layout() {
   }, [userOpen]);
 
   useEffect(() => {
-    if (!isAuthenticated || isPlatformAdmin) {
+    if (!isAuthenticated || isPlatformAdmin || isSeller) {
       setNotifyCount(0);
       return;
     }
@@ -83,7 +87,7 @@ export default function Layout() {
       clearInterval(timer);
       window.removeEventListener("notify:seen", onSeen);
     };
-  }, [isAuthenticated, isPlatformAdmin, location.pathname, user?.id]);
+  }, [isAuthenticated, isPlatformAdmin, isSeller, location.pathname, user?.id]);
 
   const search = (e) => {
     e.preventDefault();
@@ -92,27 +96,39 @@ export default function Layout() {
   };
 
   const doLogout = () => {
+    const wasAdmin = isPlatformAdmin;
+    const wasSeller = isSeller;
     logout();
     setUserOpen(false);
     setMenuOpen(false);
-    navigate("/");
+    if (wasAdmin) navigate("/admin/login");
+    else if (wasSeller) navigate("/seller/login");
+    else navigate("/");
   };
 
   const notifyLabel = notifyCount > 99 ? "99+" : String(notifyCount);
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className={isAdminArea ? "header-inner admin-header" : "header-inner"}>
-          <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
+    <div className={`app-shell app-skin-${appSkin}`}>
+      <header
+        className={`site-header ${isPlatformShell ? "header-platform" : isMerchantShell ? "header-merchant" : ""}`}
+      >
+        <div className={isPlatformShell || isMerchantShell ? "header-inner admin-header" : "header-inner"}>
+          <Link
+            to={isMerchantShell ? "/seller" : isPlatformShell ? "/admin" : "/"}
+            className="brand"
+            onClick={() => setMenuOpen(false)}
+          >
             <span className="brand-mark">N</span>
             <span>
               Nava
-              <small>Nhiều gian hàng · Một nơi mua sắm</small>
+              <small>
+                {isPlatformShell ? "Quản trị sàn" : isMerchantShell ? "Kênh người bán" : "Nhiều gian hàng · Một nơi mua sắm"}
+              </small>
             </span>
           </Link>
 
-          {!isAdminArea && !isSellerArea && (
+          {isStorefrontShell && (
             <form className="header-search" onSubmit={search}>
               <span className="search-icon">
                 <IconSearch />
@@ -129,35 +145,35 @@ export default function Layout() {
 
           <div className="header-tools">
             <nav className={menuOpen ? "main-nav open" : "main-nav"} aria-label="Điều hướng chính">
-              {!isAdminArea && (
+              {isStorefrontShell && (
                 <NavLink to="/" onClick={() => setMenuOpen(false)}>
                   Cửa hàng
                 </NavLink>
               )}
-              {isAuthenticated && !isPlatformAdmin && (
+              {isStorefrontShell && isAuthenticated && !isPlatformAdmin && !isSeller && (
                 <NavLink to="/register-shop" onClick={() => setMenuOpen(false)}>
                   Đăng ký bán
                 </NavLink>
               )}
-              {isSeller && (
+              {isMerchantShell && (
                 <NavLink to="/seller" onClick={() => setMenuOpen(false)}>
-                  Kênh người bán
+                  Tổng quan
                 </NavLink>
               )}
-              {isAuthenticated && !isPlatformAdmin && (
+              {isStorefrontShell && isAuthenticated && !isPlatformAdmin && !isSeller && (
                 <NavLink to="/orders" onClick={() => setMenuOpen(false)}>
                   Đơn hàng
                 </NavLink>
               )}
-              {isPlatformAdmin && (
+              {isPlatformShell && (
                 <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
-                  Quản trị sàn
+                  Bảng điều khiển
                 </NavLink>
               )}
             </nav>
 
             <div className="header-actions">
-              {isAuthenticated && !isPlatformAdmin && (
+              {isStorefrontShell && isAuthenticated && !isPlatformAdmin && !isSeller && (
                 <>
                   <Link
                     to="/notifications"
@@ -213,10 +229,16 @@ export default function Layout() {
                         <strong>{displayName}</strong>
                         <span>{user?.email}</span>
                       </div>
-                      <Link role="menuitem" to="/profile" onClick={() => setUserOpen(false)}>
-                        Hồ sơ của tôi
-                      </Link>
-                      {!isPlatformAdmin && (
+                      {isMerchantShell || isSeller ? (
+                        <Link role="menuitem" to="/seller/settings" onClick={() => setUserOpen(false)}>
+                          Hồ sơ shop
+                        </Link>
+                      ) : (
+                        <Link role="menuitem" to="/profile" onClick={() => setUserOpen(false)}>
+                          Hồ sơ của tôi
+                        </Link>
+                      )}
+                      {!isPlatformAdmin && !isSeller && (
                         <>
                           <Link role="menuitem" to="/orders" onClick={() => setUserOpen(false)}>
                             Đơn hàng
@@ -242,6 +264,13 @@ export default function Layout() {
                           </Link>
                         </>
                       )}
+                      {isSeller && (
+                        <>
+                          <Link role="menuitem" to="/seller" onClick={() => setUserOpen(false)}>
+                            Kênh người bán
+                          </Link>
+                        </>
+                      )}
                       {isAdmin && (
                         <Link role="menuitem" to="/admin" onClick={() => setUserOpen(false)}>
                           Bảng quản trị
@@ -256,7 +285,10 @@ export default function Layout() {
               ) : (
                 <div className="auth-actions">
                   <NavLink to="/login" className="nav-text" onClick={() => setMenuOpen(false)}>
-                    Đăng nhập
+                    Khách
+                  </NavLink>
+                  <NavLink to="/seller/login" className="nav-text" onClick={() => setMenuOpen(false)}>
+                    Bán
                   </NavLink>
                   <NavLink to="/register" className="btn btn-sm" onClick={() => setMenuOpen(false)}>
                     Tạo tài khoản
@@ -277,12 +309,14 @@ export default function Layout() {
           </div>
         </div>
       </header>
-      <main className={isAdminArea ? "content wide" : "content"}>
+      <main className={isPlatformShell ? "content wide" : "content"}>
         <ErrorBoundary resetKey={location.pathname}>
-          <Outlet />
+          <RoleBoundary>
+            <Outlet />
+          </RoleBoundary>
         </ErrorBoundary>
       </main>
-      <footer className="site-footer">
+      <footer className={`site-footer ${isPlatformShell || isMerchantShell ? "site-footer-dash" : ""}`}>
         <div className="footer-grid">
           <div>
             <strong>Nava</strong>
@@ -293,7 +327,7 @@ export default function Layout() {
             <p>Hotline 1900 0000 · 8:00–21:00</p>
             <p className="tiny">
               <Link to="/forgot-password">Quên mật khẩu</Link>
-              {!isAdmin && isAuthenticated && (
+              {isStorefrontShell && !isAdmin && isAuthenticated && !isSeller && (
                 <>
                   {" · "}
                   <Link to="/notifications">Thông báo đơn</Link>

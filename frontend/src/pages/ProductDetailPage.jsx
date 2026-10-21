@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { MessageConstant } from "../constants";
 import api from "../services/api";
 import { ErrorBanner, Loading } from "../components/Feedback";
@@ -10,7 +10,7 @@ import { savePendingCart } from "../utils/pendingCart";
 
 export default function ProductDetailPage() {
   const { id, shopId: shopKey } = useParams();
-  const { isAuthenticated, isPlatformAdmin } = useAuth();
+  const { isAuthenticated, isPlatformAdmin, isSeller } = useAuth();
   const { refresh } = useCart() || {};
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
@@ -19,11 +19,23 @@ export default function ProductDetailPage() {
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [myShopId, setMyShopId] = useState(null);
 
   const shopId =
     resolvedShopId ||
     (shopKey && /^\d+$/.test(String(shopKey)) ? shopKey : product?.shopId != null ? String(product.shopId) : null);
   const backHref = shopId ? `/shops/${shopId}` : "/";
+
+  useEffect(() => {
+    if (!isSeller) {
+      setMyShopId(null);
+      return;
+    }
+    api
+      .get("/shops/me")
+      .then((r) => setMyShopId(r.data.data?.id ?? null))
+      .catch(() => setMyShopId(null));
+  }, [isSeller]);
 
   useEffect(() => {
     setLoading(true);
@@ -88,6 +100,10 @@ export default function ProductDetailPage() {
     }
   };
 
+  if (isSeller) {
+    return <Navigate to="/seller/products" replace />;
+  }
+
   if (loading) return <Loading />;
   if (!product) {
     return <ErrorBanner error={error || { message: MessageConstant.PRODUCT_NOT_FOUND }} />;
@@ -108,7 +124,22 @@ export default function ProductDetailPage() {
         <p className="lede">{product.description}</p>
         <ErrorBanner error={error} />
         {msg && <div className="banner ok">{msg}</div>}
-        {!isPlatformAdmin && (
+        {isSeller && (
+          <div className="banner">
+            {shopId && myShopId != null && String(shopId) === String(myShopId) ? (
+              <>
+                Sản phẩm thuộc shop của bạn. Quản lý tại{" "}
+                <Link to="/seller/products">Kênh người bán</Link>.
+              </>
+            ) : (
+              <>
+                Tài khoản người bán không mua hàng — dùng tài khoản khách để đặt hàng. Xem{" "}
+                <Link to="/seller">Kênh người bán</Link>.
+              </>
+            )}
+          </div>
+        )}
+        {!isPlatformAdmin && !isSeller && (
           <div className="buy-box">
             <label>
               Số lượng

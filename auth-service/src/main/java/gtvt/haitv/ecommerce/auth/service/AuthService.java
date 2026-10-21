@@ -4,8 +4,10 @@ import gtvt.haitv.ecommerce.auth.entity.User;
 import gtvt.haitv.ecommerce.auth.dto.ForgotPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginResponse;
+import gtvt.haitv.ecommerce.auth.dto.ChangePasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.RegisterRequest;
 import gtvt.haitv.ecommerce.auth.dto.ResetPasswordRequest;
+import gtvt.haitv.ecommerce.auth.dto.ShopApprovedProvisionRequest;
 import gtvt.haitv.ecommerce.auth.dto.UserResponse;
 import gtvt.haitv.ecommerce.auth.repository.UserRepository;
 import gtvt.haitv.ecommerce.common.constant.AppConstant;
@@ -15,6 +17,7 @@ import gtvt.haitv.ecommerce.common.constant.NumberConstant;
 import gtvt.haitv.ecommerce.common.exception.ApiException;
 import gtvt.haitv.ecommerce.common.log.FlowLog;
 import gtvt.haitv.ecommerce.common.mail.EmailService;
+import gtvt.haitv.ecommerce.common.mail.ShopApprovedEmailTemplate;
 import gtvt.haitv.ecommerce.common.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
@@ -198,6 +202,51 @@ public class AuthService {
             f.fail(e);
             throw e;
         }
+    }
+
+    @Transactional
+    public void provisionShopApproved(Long userId, ShopApprovedProvisionRequest request) {
+        User user = getUser(userId);
+        String temp = generateTempPassword();
+        user.setPasswordHash(passwordEncoder.encode(temp));
+        user.setRole(AppConstant.ROLE_SELLER);
+        user.setMustChangePassword(true);
+        String to = request.getContactEmail().trim().toLowerCase();
+        ShopApprovedEmailTemplate.Context ctx = new ShopApprovedEmailTemplate.Context(
+                request.getShopName(),
+                request.getShopId(),
+                request.getSlug(),
+                user.getEmail(),
+                temp,
+                emailService.storeUrl());
+        emailService.send(to, ShopApprovedEmailTemplate.subject(request.getShopName()), ShopApprovedEmailTemplate.body(ctx));
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = getUser(userId);
+        if (user.isMustChangePassword()) {
+            if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, MessageConstant.VALIDATION_FAILED);
+            }
+        } else {
+            if (request.getCurrentPassword() == null
+                    || !passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+                throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorConstant.INVALID_CREDENTIALS, MessageConstant.INVALID_CREDENTIALS);
+            }
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(false);
+    }
+
+    private static String generateTempPassword() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+        SecureRandom rnd = new SecureRandom();
+        StringBuilder sb = new StringBuilder(12);
+        for (int i = 0; i < 12; i++) {
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     @Transactional

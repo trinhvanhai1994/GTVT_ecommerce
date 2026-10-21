@@ -1,5 +1,6 @@
 package gtvt.haitv.ecommerce.shop.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -22,4 +23,8 @@ public class ShopRequest {
     private String description;
     @Size(max = 512)
     private String logoUrl;
+    @NotBlank
+    @Email
+    @Size(max = 255)
+    private String contactEmail;
 }

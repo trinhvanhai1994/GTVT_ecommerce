@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import ProductCard from "../components/ProductCard.jsx";
 import { Empty, ErrorBanner, Loading } from "../components/Feedback";
@@ -9,7 +10,9 @@ function isNumericId(value) {
 }
 
 export default function ShopProductListPage() {
+  const { isSeller } = useAuth();
   const { shopId: shopKey } = useParams();
+  const [myShopId, setMyShopId] = useState(null);
   const [params, setParams] = useSearchParams();
   const categoryId = params.get("categoryId");
   const [shop, setShop] = useState(null);
@@ -18,6 +21,17 @@ export default function ShopProductListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [redirectId, setRedirectId] = useState(null);
+
+  useEffect(() => {
+    if (!isSeller) {
+      setMyShopId(null);
+      return;
+    }
+    api
+      .get("/shops/me")
+      .then((r) => setMyShopId(r.data.data?.id ?? null))
+      .catch(() => setMyShopId(null));
+  }, [isSeller]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +123,19 @@ export default function ShopProductListPage() {
           {shop.description && <p className="lede">{shop.description}</p>}
         </div>
       </div>
+
+      {isSeller && (
+        <div className="banner" style={{ marginBottom: "1rem" }}>
+          <Link to="/seller">← Kênh người bán</Link>
+          {myShopId != null && Number(id) === Number(myShopId) && (
+            <>
+              {" "}
+              · Vitrine cửa hàng của bạn — quản lý SP tại{" "}
+              <Link to="/seller/products">Sản phẩm</Link>.
+            </>
+          )}
+        </div>
+      )}
 
       {cats.length > 0 && (
         <div className="cat-row" style={{ marginBottom: "1.25rem" }}>

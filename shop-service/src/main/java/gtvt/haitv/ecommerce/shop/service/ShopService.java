@@ -12,6 +12,8 @@ import gtvt.haitv.ecommerce.shop.entity.Shop;
 import gtvt.haitv.ecommerce.shop.entity.ShopMember;
 import gtvt.haitv.ecommerce.shop.repository.ShopMemberRepository;
 import gtvt.haitv.ecommerce.shop.repository.ShopRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ import java.util.Map;
 
 @Service
 public class ShopService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShopService.class);
 
     private final ShopRepository shopRepository;
     private final ShopMemberRepository memberRepository;
@@ -92,6 +96,7 @@ public class ShopService {
         shop.setName(request.getName().trim());
         shop.setDescription(request.getDescription());
         shop.setLogoUrl(request.getLogoUrl());
+        shop.setContactEmail(request.getContactEmail().trim().toLowerCase());
         shop.setStatus(AppConstant.SHOP_PENDING);
         shop = shopRepository.save(shop);
 
@@ -136,6 +141,25 @@ public class ShopService {
         Shop shop = shop(id);
         shop.setStatus(AppConstant.SHOP_APPROVED);
         shop.setRejectReason(null);
+        try {
+            String mailTo = shop.getContactEmail();
+            if (mailTo == null || mailTo.isBlank()) {
+                var owner = authClient.byId(shop.getOwnerUserId());
+                mailTo = owner.getData() != null ? owner.getData().getEmail() : null;
+            }
+            if (mailTo == null || mailTo.isBlank()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, ErrorConstant.VALIDATION_ERROR, "Missing contact email");
+            }
+            authClient.shopApproved(
+                    shop.getOwnerUserId(),
+                    new gtvt.haitv.ecommerce.shop.dto.ShopApprovedProvisionPayload(
+                            mailTo,
+                            shop.getName(),
+                            shop.getId(),
+                            shop.getSlug()));
+        } catch (Exception ex) {
+            log.error("Shop {} approved but credential email failed: {}", id, ex.getMessage());
+        }
         return ShopResponse.from(shop);
     }
 

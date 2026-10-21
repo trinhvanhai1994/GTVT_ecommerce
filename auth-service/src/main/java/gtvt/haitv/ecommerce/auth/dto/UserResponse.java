@@ -15,6 +15,7 @@ public class UserResponse {
     private String fullName;
     private String role;
     private String status;
+    private boolean mustChangePassword;
 
     public static UserResponse from(User user) {
         UserResponse r = new UserResponse();
@@ -23,6 +24,7 @@ public class UserResponse {
         r.fullName = user.getFullName();
         r.role = user.getRole();
         r.status = user.getStatus();
+        r.mustChangePassword = user.isMustChangePassword();
         return r;
     }
 }

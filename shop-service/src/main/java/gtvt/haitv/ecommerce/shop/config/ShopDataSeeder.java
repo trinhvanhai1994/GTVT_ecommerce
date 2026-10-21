@@ -74,19 +74,20 @@ public class ShopDataSeeder {
                 throw new IllegalStateException("Auth user missing for " + email);
             }
             long ownerId = res.getData().getId();
-            Shop shop = shop(shops, ownerId, slug, SHOPS[i][1], SHOPS[i][2], LOGOS[i]);
+            Shop shop = shop(shops, ownerId, slug, SHOPS[i][1], SHOPS[i][2], LOGOS[i], email);
             member(members, shop.getId(), ownerId);
             log.info("Seeded shop {} (id={}) owner={}", slug, shop.getId(), email);
         }
     }
 
-    private Shop shop(ShopRepository repo, Long ownerId, String slug, String name, String desc, String logo) {
+    private Shop shop(ShopRepository repo, Long ownerId, String slug, String name, String desc, String logo, String email) {
         Shop s = new Shop();
         s.setOwnerUserId(ownerId);
         s.setSlug(slug);
         s.setName(name);
         s.setDescription(desc);
         s.setLogoUrl(logo);
+        s.setContactEmail(email);
         s.setStatus(AppConstant.SHOP_APPROVED);
         return repo.save(s);
     }

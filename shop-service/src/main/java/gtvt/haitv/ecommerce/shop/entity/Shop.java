@@ -33,6 +33,8 @@ public class Shop {
     private String description;
     @Column(name = "logo_url", length = 512)
     private String logoUrl;
+    @Column(name = "contact_email", length = 255)
+    private String contactEmail;
     @Column(nullable = false, length = 32)
     private String status;
     @Column(name = "reject_reason", length = 512)

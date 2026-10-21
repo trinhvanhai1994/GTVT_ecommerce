@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
 import { SHOP_STATUS_LABEL, labelOf } from "../utils/catalog";
 
 export default function RegisterShopPage() {
-  const { isAuthenticated, isPlatformAdmin } = useAuth();
-  const [form, setForm] = useState({ name: "", slug: "", description: "", logoUrl: "" });
+  const { isAuthenticated, isPlatformAdmin, isSeller, user, refreshProfile } = useAuth();
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    logoUrl: "",
+    contactEmail: user?.email || ""
+  });
   const [mine, setMine] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -31,6 +38,9 @@ export default function RegisterShopPage() {
   if (isPlatformAdmin) {
     return <Navigate to="/admin" replace />;
   }
+  if (isSeller) {
+    return <Navigate to="/seller" replace />;
+  }
   if (loading) return <Loading />;
 
   const submit = async (e) => {
@@ -38,14 +48,19 @@ export default function RegisterShopPage() {
     setSaving(true);
     setError(null);
     try {
-      const { data } = await api.post("/shops", form);
-      setMine(data.data);
+      await api.post("/shops", form);
+      await refreshProfile();
+      navigate("/seller", { replace: true });
     } catch (err) {
       setError(err);
     } finally {
       setSaving(false);
     }
   };
+
+  if (mine?.status === "APPROVED") {
+    return <Navigate to="/seller" replace />;
+  }
 
   if (mine) {
     return (
@@ -58,17 +73,8 @@ export default function RegisterShopPage() {
         </p>
         {mine.status === "PENDING" && (
           <p>
-            Hồ sơ đang chờ Nava duyệt. Khi được duyệt, cửa hàng sẽ hiện trên trang chủ.{" "}
-            <strong>Đăng xuất rồi đăng nhập lại</strong> để mở Kênh người bán.
+            Hồ sơ đang chờ Nava duyệt. Khi được duyệt, email <strong>{mine.contactEmail || "shop"}</strong> sẽ nhận mật khẩu tạm và hướng dẫn vào Kênh người bán.
           </p>
-        )}
-        {mine.status === "APPROVED" && (
-          <>
-            <p className="muted">Nếu chưa vào được Kênh người bán, hãy đăng nhập lại.</p>
-            <Link className="btn" to="/seller">
-              Vào Kênh người bán
-            </Link>
-          </>
         )}
         {mine.status === "REJECTED" && (
           <p className="muted">Hồ sơ chưa được duyệt. Bạn có thể liên hệ hỗ trợ hoặc gửi lại sau khi bổ sung thông tin.</p>
@@ -104,6 +110,15 @@ export default function RegisterShopPage() {
         <label>
           Liên kết ảnh logo
           <input value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} placeholder="https://…" />
+        </label>
+        <label>
+          Email liên hệ shop (nhận thông tin sau duyệt)
+          <input
+            required
+            type="email"
+            value={form.contactEmail}
+            onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+          />
         </label>
         <button className="btn btn-lg" disabled={saving}>
           {saving ? "Đang gửi…" : "Gửi hồ sơ"}

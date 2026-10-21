@@ -218,6 +218,8 @@ services:
       <<: *db-env
       SERVER_PORT: 8084
       ADMIN_INSTANCE_BASE_URL: http://inventory:8084
+      SHOP_SERVICE_URI: http://shop:8089
+      PRODUCT_SERVICE_URI: http://product:8082
     ports:
       - "8084:8084"
     depends_on:

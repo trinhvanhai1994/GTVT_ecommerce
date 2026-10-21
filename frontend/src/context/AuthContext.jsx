@@ -35,6 +35,25 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener(StringConstant.AUTH_EXPIRED_EVENT, onExpired);
   }, []);
 
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get("/auth/profile");
+        if (cancelled) return;
+        const profile = data.data;
+        localStorage.setItem(StringConstant.USER_KEY, JSON.stringify(profile));
+        setUser(profile);
+      } catch {
+        if (!cancelled) logout();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
     const access = data.data.accessToken;
@@ -50,6 +69,14 @@ export function AuthProvider({ children }) {
     await api.post("/auth/register", payload);
   };
 
+  const refreshProfile = async () => {
+    const { data } = await api.get("/auth/profile");
+    const profile = data.data;
+    localStorage.setItem(StringConstant.USER_KEY, JSON.stringify(profile));
+    setUser(profile);
+    return profile;
+  };
+
   const role = String(user?.role || "").toUpperCase();
   const value = useMemo(
     () => ({
@@ -61,7 +88,8 @@ export function AuthProvider({ children }) {
       isPlatformAdmin: role === AppConstant.ROLE_PLATFORM_ADMIN || role === AppConstant.ROLE_ADMIN,
       login,
       register,
-      logout
+      logout,
+      refreshProfile
     }),
     [user, token, role]
   );

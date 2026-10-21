@@ -21,8 +21,8 @@ Usage:
   ./scripts/ops-deploy.sh start --service <composeService>
   ./scripts/ops-deploy.sh stop-all
   ./scripts/ops-deploy.sh start-all
-  ./scripts/ops-deploy.sh rebuild --service <composeService>
-  ./scripts/ops-deploy.sh maven-rebuild --service <composeService>
+  ./scripts/ops-deploy.sh rebuild --service <composeService> [--skip-maven]
+  ./scripts/ops-deploy.sh maven-rebuild --service <composeService>  (alias of rebuild)
 
 Actions:
   full            Deploy stack (optional --exclude-ops skips ops-api/ops-ui)
@@ -61,10 +61,26 @@ maven_module_for() {
   esac
 }
 
+normalize_service() {
+  case "$1" in
+    order-service) echo order ;;
+    auth-service) echo auth ;;
+    shop-service) echo shop ;;
+    product-service) echo product ;;
+    cart-service) echo cart ;;
+    inventory-service) echo inventory ;;
+    payment-service) echo payment ;;
+    notification-service) echo notification ;;
+    gateway-service) echo gateway ;;
+    *) echo "$1" ;;
+  esac
+}
+
 is_known_service() {
-  local s
+  local s n
+  n="$(normalize_service "$1")"
   for s in $KNOWN_SERVICES; do
-    [[ "$s" == "$1" ]] && return 0
+    [[ "$s" == "$n" ]] && return 0
   done
   return 1
 }
@@ -130,9 +146,10 @@ require_service() {
     echo "Missing --service <composeService>" >&2
     exit 1
   fi
+  SERVICE="$(normalize_service "$SERVICE")"
   if ! is_known_service "$SERVICE"; then
     echo "Unknown service: $SERVICE" >&2
-    echo "Known: $KNOWN_SERVICES" >&2
+    echo "Known: $KNOWN_SERVICES (aliases: order-service, auth-service, …)" >&2
     exit 1
   fi
 }
@@ -287,17 +304,23 @@ do_rebuild() {
   require_service
   refuse_ops_mutate rebuild
   cleanup_leftovers
-  echo "Rebuild image + recreate (no Maven, no-deps): $SERVICE"
-  docker compose up -d --build --no-deps "$SERVICE"
+  local mod
+  mod="$(maven_module_for "$SERVICE")"
+  if [[ -n "$mod" && "$SKIP_MAVEN" -eq 0 ]]; then
+    echo "Maven package (required: docker/jvm.Dockerfile copies target/*.jar from host)..."
+    maven_package_module "$mod"
+  elif [[ -n "$mod" && "$SKIP_MAVEN" -eq 1 ]]; then
+    echo "WARN: --skip-maven — image may still embed an old ${mod}/target/*.jar" >&2
+  fi
+  echo "Docker build --no-cache + recreate (no-deps): $SERVICE"
+  docker compose build --no-cache "$SERVICE"
+  docker compose up -d --no-deps --force-recreate "$SERVICE"
 }
 
 do_maven_rebuild() {
   require_service
   refuse_ops_mutate maven-rebuild
-  cleanup_leftovers
-  maven_package_module "$(maven_module_for "$SERVICE")"
-  echo "Rebuild image + recreate (no-deps): $SERVICE"
-  docker compose up -d --build --no-deps "$SERVICE"
+  do_rebuild
 }
 
 case "$COMMAND" in

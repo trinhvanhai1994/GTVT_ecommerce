@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import gtvt.haitv.ecommerce.shop.dto.ShopApprovedProvisionPayload;
 
 import java.util.Map;
 
@@ -16,8 +17,14 @@ public interface AuthClient {
     @GetMapping("/internal/users/by-email")
     ApiResponse<RemoteUser> byEmail(@RequestParam("email") String email);
 
+    @GetMapping("/internal/users/{id}")
+    ApiResponse<RemoteUser> byId(@PathVariable("id") Long id);
+
     @PostMapping("/internal/users/{id}/role")
     ApiResponse<Void> setRole(@PathVariable("id") Long id, @RequestBody Map<String, String> body);
+
+    @PostMapping("/internal/users/{id}/shop-approved")
+    ApiResponse<Void> shopApproved(@PathVariable("id") Long id, @RequestBody ShopApprovedProvisionPayload body);
 
     class RemoteUser {
         private Long id;

@@ -40,6 +40,7 @@ theo kiến trúc Microservices với Spring Boot + Spring Cloud
 | Storefront (route, API UI) | 3.5, 5.6 |
 | Quy trình BPMN | 4 |
 | Kiến trúc Microservices | 1, 5 |
+| Triển khai production (định hướng) | 5.7, 6.3 |
 | Biểu đồ tiêu biểu | 6 |
 | Dữ liệu / API / kiểm thử | 7, 8 |
 
@@ -67,6 +68,8 @@ theo kiến trúc Microservices với Spring Boot + Spring Cloud
 | Storefront | Giao diện khách (React) — thư mục `frontend/`, tên sản phẩm **Nava** |
 | SPA | Single Page Application — React + Vite, điều hướng client không reload trang |
 | Protected route | Route bọc `ProtectedRoute`: bắt login và/hoặc role CUSTOMER / SELLER / PLATFORM_ADMIN |
+| Idempotency | Gọi lại cùng request (retry) không tạo side-effect trùng (đơn, trừ kho) |
+| Transactional Outbox | Ghi event vào DB cùng transaction nghiệp vụ; worker relay sang MQ — tránh mất message |
 
 ---
 
@@ -291,6 +294,7 @@ Customer **không** CRUD shop / category / product.
 | FR-S07 | Kênh người bán — product | CRUD SP scoped `shopId` |
 | FR-S08 | Kênh người bán — tồn kho | Cập nhật tồn SP của shop |
 | FR-S09 | Kênh người bán — đơn | Xem / đổi trạng thái fulfillment đơn **của shop mình** |
+| FR-S10 | Thống kê seller | `GET /orders/seller-stats?shopId=&days=` (alias `/orders/seller/stats`) |
 
 MVP: một user Owner tối đa **một** shop đang `PENDING` hoặc `APPROVED`.
 
@@ -314,7 +318,9 @@ Storefront (`frontend/`) triển khai các FR ở mục 3.2–3.4. Mọi HTTP đ
 
 | FR | Route | Page (component) | API chính qua Gateway |
 |----|-------|------------------|------------------------|
-| FR-01 | `/register`, `/login` | `RegisterPage`, `LoginPage` | `POST /auth/register`, `POST /auth/login` |
+| FR-01 | `/register`, `/login` | `RegisterPage`, `LoginPage` (cổng **khách**) | `POST /auth/register`, `POST /auth/login` |
+| — | `/admin/login` | `AdminLoginPage` | Chỉ `PLATFORM_ADMIN` → `/admin` |
+| — | `/seller/login` | `SellerLoginPage` | Chỉ `SELLER` → `/seller` / `/register-shop` |
 | FR-01 | `/forgot-password`, `/reset-password` | `ForgotPasswordPage`, `ResetPasswordPage` | `POST /auth/forgot-password`, `POST /auth/reset-password` |
 | FR-02 | `/` | `HomePage` | `GET /shops?status=APPROVED&q=` |
 | FR-03–05 | `/shops/:shopId` | `ShopProductListPage` | `GET /shops/id/{shopId}`, `GET /products?shopId=`, `GET /products/categories?shopId=` |
@@ -332,20 +338,32 @@ Storefront (`frontend/`) triển khai các FR ở mục 3.2–3.4. Mọi HTTP đ
 | FR | Route | Page | API chính |
 |----|-------|------|-----------|
 | FR-S01–02 | `/register-shop` | `RegisterShopPage` | `POST /shops` |
-| FR-S03–04 | `/seller` | `SellerPage` | `GET /shops/me`; nếu `APPROVED`: category/product/orders seller |
-| FR-S06–08 | `/seller` (tab) | `SellerPage` | `POST/GET /products/categories`, `POST /products`, `GET /products`, `GET /orders/seller?shopId=` |
-| FR-A02–04 | `/admin` | `AdminPage` | `PATCH /admin/shops/{id}/approve\|reject\|suspend`, `GET /admin/orders`, `GET /admin/users`, inventory |
-| FR-A05 | `/admin` | `AdminPage` | `PATCH /admin/orders/{id}/status`; quản lý SP/tồn toàn sàn (MVP admin) |
+| FR-S03–04 | `/seller` | `SellerLayout` + `SellerOverview` | `GET /shops/me`; dashboard KPI + `GET /orders/seller-stats?shopId=&days=7` |
+| FR-S06–08 | `/seller/products`, `/categories`, `/inventory` | `SellerProductsPage`, … | CRUD product/category; `PUT /inventory/{productId}` |
+| FR-S09 | `/seller/orders`, `/seller/orders/:id` | `SellerOrdersPage`, `SellerOrderDetailPage` | `GET /orders/seller?shopId=`; fulfillment PATCH |
+| FR-S — | `/seller/settings` | `SellerSettingsPage` | `PUT /shops/me` |
+| FR-S02b | `/register-shop` | `RegisterShopPage` | `contactEmail` bắt buộc |
+| FR-A02–04 | `/admin`, `/admin/shops`, `/admin/shops/:shopId` | `AdminLayout` + pages | Duyệt shop; chi tiết shop — đơn/SP theo shop |
+| FR-A05 | `/admin/orders` | `AdminOrdersPage` | `PATCH /admin/orders/{id}/status`; cột Shop (snapshot) |
+| FR-A — | `/admin/customers` | `AdminCustomersPage` | Khóa/mở CUSTOMER |
 
-### Quy tắc hiển thị (BR UI — bổ sung BR backend)
+### Quy tắc hiển thị (BR-UI)
 
-| Quy tắc | Triển khai |
-|---------|------------|
-| Chưa đăng nhập | `ProtectedRoute` → `/login` (giữ `state.from`) |
-| Route CUSTOMER | Role PLATFORM_ADMIN bị redirect `/admin` (không dùng luồng giỏ Customer) |
-| Route SELLER | User chưa SELLER → `/register-shop`; Admin vào `/seller` → `/admin` |
-| Shop chưa APPROVED | `SellerPage` chỉ hiện trạng thái, không tab quản lý |
-| Luồng mua chính | Không mount `ProductListPage` (catalog toàn sàn) trong `App.jsx` — khớp BR-MV-03 |
+| ID | Quy tắc | Triển khai |
+|----|---------|------------|
+| BR-UI-01 | SELLER không dùng luồng mua | `ProtectedRoute role=CUSTOMER` → redirect `/seller` |
+| BR-UI-02 | PDP với SELLER | Không buy-box; CTA theo shop của mình vs shop khác |
+| BR-UI-03 | Header SELLER | Ẩn giỏ, thông báo, “Đơn hàng”, “Đăng ký bán”; có “Xem vitrine” |
+| BR-UI-04 | Đơn bán | Link `/seller/orders/:id?shopId=` — không `/orders/:id` |
+| BR-UI-05 | Đăng ký bán | Ẩn khi đã `SELLER` (Layout, Home) |
+| BR-UI-06 | MK tạm | Login SELLER + `mustChangePassword` → `/change-password` |
+| BR-UI-07 | Admin login | Quản trị **chỉ** `/admin/login` — `/login` từ chối admin |
+| BR-UI-08 | Shop APPROVED | `/register-shop` → redirect `/seller`; onboarding trong `/seller` |
+| BR-UI-09 | Sandbox route | Sau login: ADMIN chỉ `/admin*`; SELLER chỉ `/seller*` + `/change-password`; CUSTOMER không vào `/admin*`/`/seller*` |
+| BR-UI-10 | Đồng bộ role | Sau `POST /shops` gọi `refreshProfile()`; F5 có token → `GET /auth/profile`; seller không quản lý qua PDP vitrine |
+| — | Theme | Storefront (cam) · `/admin/*` platform · merchant: `/seller/*`, `/seller/login`, `/register-shop` (SELLER) |
+| — | Shop PENDING | `RegisterShopPage` / `SellerOnboarding` — chưa sidebar CRUD đầy đủ |
+| — | Home guest | CTA: đăng nhập khách · người bán · quản trị sàn |
 
 ## 3.6 Business Rules
 
@@ -415,14 +433,16 @@ flowchart TD
   admin -->|Approve| ok[APPROVED_hien_Home]
   admin -->|Reject| rej[REJECTED_kem_ly_do]
   admin -->|Suspend| sus[SUSPENDED_an_Home]
-  ok --> sellerCenter([Kenh_nguoi_ban])
+  ok --> cred[auth_MK_tam_email_contactEmail]
+  cred --> sellerCenter([Kenh_nguoi_ban_doi_MK])
 ```
 
 **Đọc hình**
 
-- `shop-service` tạo shop `PENDING`; chưa hiện Home.
-- Approve → Home list; Seller dùng Kênh người bán.
-- Reject / Suspend → không bán; Customer không thấy trên Home.
+- `shop-service` tạo shop `PENDING`; chưa hiện Home; hồ sơ có `contactEmail`.
+- Approve → `APPROVED` + gọi `auth-service` (mật khẩu tạm, `mustChangePassword`) + email template tới `contactEmail` (best-effort).
+- Seller đăng nhập lần đầu → `/change-password` → `/seller` (dashboard merchant).
+- Reject / Suspend → **không** gửi email credential; Customer không thấy shop trên Home.
 
 ## 4.3 BPMN-03 — Mua hàng trong shop (Home → shop → list SP)
 
@@ -629,7 +649,41 @@ sequenceDiagram
 
 - Không SSR/SEO sâu; layout/style tập trung qua `Layout` và CSS class chung.
 - File `ProductListPage.jsx` **legacy** — không gắn route trong `App.jsx`; luồng chính luôn qua shop (BR-MV-03).
-- `AdminPage` có tab quản lý inventory/SP toàn sàn — tách biệt scope Seller (`shopId`).
+- Admin console (`AdminLayout`) — giám sát sàn; catalog SP do Seller (`shopId`).
+
+## 5.7 Giới hạn MVP và định hướng triển khai production
+
+MVP chạy **môi trường dev** (Docker Compose, một instance/service). Kiến trúc nghiệp vụ (Gateway, database-per-service, Saga tại `order-service`, AMQP cho Notification) **đủ demo và bảo vệ**; **chưa production-grade** về HA, zero-downtime deploy và observability tập trung.
+
+| Hạng mục | Hiện trạng MVP | Bổ sung khi go-live (ưu tiên) |
+|----------|----------------|-------------------------------|
+| Schema DB | JPA `ddl-auto: update` | **Flyway/Liquibase** — migration có version |
+| Deploy | Script / rebuild container | **CI/CD** + **rolling update**; **readiness** tách **liveness** |
+| Saga checkout | Orchestration REST + compensate | **Idempotency-Key** trên checkout; timeout + **circuit breaker** (Feign) |
+| Event Notification | Publish Rabbit **sau commit** | **Transactional Outbox** + relay worker |
+| HA hạ tầng | Postgres / Rabbit / Eureka single node | DB/MQ managed; backup **PITR**; discovery theo orchestrator (K8s/ECS) |
+| Observability | Log + `X-Correlation-Id` | **OpenTelemetry** (trace) + **Prometheus/Grafana** (metric/SLO) |
+| Edge | JWT validate tại từng service | (Tuỳ chọn) JWT/rate limit tại Gateway |
+
+**Messaging:** giữ **RabbitMQ** cho side-effect (thông báo). Chỉ cân nhắc **Kafka** khi có nhiều consumer độc lập (audit, search, BI) cần **replay log** — ngoài phạm vi MVP Nava.
+
+### 5.7.1 Case study ngắn (thực tế → GTVT)
+
+**Case 1 — Marketplace: tách đơn theo seller (mô hình sàn đa gian hàng)**  
+Một giỏ nhiều shop → **N đơn**; mỗi đơn một chuỗi reserve → charge → confirm; shop A lỗi thanh toán **không** rollback shop B. GTVT map trực tiếp: split Order theo `shopId` + Saga tại `order-service` (BPMN-05). Khi lên prod, rủi ro thường gặp là **retry checkout** sau timeout → cần **idempotency** và reserve/release **idempotent**.
+
+**Case 2 — DB đã commit, message không tới (Transactional Outbox)**  
+Order **COMMITTED** nhưng bước gửi RabbitMQ fail (broker/network) → khách có đơn, **không** email/thông báo. GTVT dùng publish **afterCommit** — đúng hướng tách transaction, nhưng chưa Outbox → có thể **at-most-once** trên đường MQ. Chuẩn ngành: ghi event vào bảng **outbox** cùng transaction Order; worker relay sang RabbitMQ.
+
+### 5.7.2 So sánh messaging (tóm tắt)
+
+| | **RabbitMQ (đồ án)** | **Kafka** |
+|--|----------------------|-----------|
+| Vai trò | Task queue / notify | Event log, nhiều consumer, replay |
+| Phù hợp Nava | Order → Notification (một consumer) | Audit, search, analytics đa team |
+| Ghi chú vận hành | Nên kèm **Outbox** + **DLQ** | Ops phức tạp hơn; không bắt buộc cho MVP |
+
+Chi tiết kỹ thuật triển khai local: `docs/12-deployment.md`, `docs/15-spring-cloud-luong-chay-va-config.md`.
 
 ---
 
@@ -683,12 +737,21 @@ flowchart LR
   UC7 --> UC10
 ```
 
-## 6.3 Deployment (dev)
+## 6.3 Deployment
+
+**Dev (MVP hiện tại)**
 
 - Frontend `:5173`
 - Gateway `:8080`, Eureka `:8761`
 - auth `:8081`, product `:8082`, cart `:8083`, inventory `:8084`, order `:8085`, payment `:8086`, notification `:8087`, **shop `:8089`** (admin-server giữ `:8088`)
 - PostgreSQL `:5432`, RabbitMQ `:5672`
+- Engine: `scripts/ops-deploy.sh` (Maven trong container + `docker compose up`)
+
+**Production (định hướng — mục 5.7)**
+
+- Storefront: build static (Vite) + CDN/reverse proxy; API chỉ qua Gateway (HTTPS).
+- Microservice: orchestrator (K8s/ECS), **rolling deploy**, secret qua vault/env; **không** `ddl-auto: update` trên prod.
+- Data: Postgres/RabbitMQ managed, backup có kiểm thử restore; correlation id + trace/metric tập trung.
 
 ## 6.4 Hình 5.1 — Sequence đăng ký & duyệt shop
 
@@ -708,7 +771,11 @@ sequenceDiagram
   SHOP-->>FE: Shop_PENDING
   Admin->>GW: PATCH_approve
   GW->>SHOP: status_APPROVED
-  SHOP-->>FE: Shop_hien_Home
+  SHOP->>AUTH: shop_approved_provision
+  AUTH->>AUTH: temp_password_mustChangePassword
+  AUTH-->>SHOP: ok
+  Note over AUTH: Email template to contactEmail
+  SHOP-->>FE: ShopResponse
 ```
 
 ## 6.5 Hình 5.2 — Sequence Checkout + Saga (một Order / shop)
@@ -997,6 +1064,15 @@ Envelope:
 | UI-02 | Seller pending | `/register-shop` → `/seller` | Thấy trạng thái PENDING, chưa tab CRUD |
 | UI-03 | Admin duyệt | `/admin` | Approve → shop xuất hiện Home (`/`) |
 | UI-04 | Payment fail demo | `/checkout` + `simulatePaymentFailure` | Order `PAYMENT_FAILED`; thông báo |
+| UI-05 | Seller không mua | Login seller → `/cart` | Redirect `/seller`; header không giỏ |
+| UI-06 | Đơn bán | `/seller/orders` → chi tiết | `/seller/orders/:id?shopId=` — timeline + line items |
+| UI-07 | Duyệt + email | Admin approve | Toast contactEmail; log `[MOCK EMAIL]` hoặc Brevo |
+| UI-08 | Admin shop detail | `/admin/shops/:shopId` | Đơn lọc đúng shop |
+| UI-09 | Theme | Admin vs Seller vs Home | Sidebar xanh vs teal vs storefront cam |
+| UI-10 | Ba cổng login | Home → `/login`, `/seller/login`, `/admin/login` | Đúng role sau đăng nhập |
+| UI-11 | Khóa khách | Admin tab Khách hàng → Khóa | `INACTIVE` không login |
+| UI-12 | Sandbox | Seller gõ `/shops/1` hoặc `/` | Redirect `/seller` |
+| UI-13 | Sandbox | Admin gõ `/` hoặc `/login` | Redirect `/admin` |
 
 ## 8.5 Checklist bảo vệ
 
@@ -1011,6 +1087,8 @@ Envelope:
 | FE gọi đâu? | Chỉ API Gateway. |
 | Có cổng thanh toán thật? | Không — Mock payment. |
 | Vì sao URL dùng `shopId`? | Ổn định khi đổi tên shop; slug chỉ là hồ sơ. |
+| MVP vs production? | MVP: Compose dev; prod: migration DB, Outbox, idempotent checkout, CI/CD rolling — mục 5.7. |
+| Vì sao chưa Kafka? | Một consumer Notification; RabbitMQ đủ; Kafka khi cần replay/đa consumer. |
 
 ---
 
@@ -1020,7 +1098,9 @@ Envelope:
 
 Tám business service (+ Gateway, Eureka): nổi bật **`shop-service`** (SoT gian hàng) và **`order-service`** (Saga Orchestrator). Database per service; `shopId` logical xuyên context.
 
-Tài liệu đủ để thuyết trình nghiệp vụ và kiến trúc. Các tính năng sàn nâng cao (chat, livestream, tìm toàn sàn, ví thật) nằm ngoài phạm vi MVP.
+Tài liệu đủ để thuyết trình nghiệp vụ và kiến trúc. Lộ trình go-live (migration schema, idempotent Saga, Outbox, HA DB/MQ, observability) tóm tắt tại **mục 5.7** — không đổi thiết kế bounded context hiện tại.
+
+Các tính năng sàn nâng cao (chat, livestream, tìm toàn sàn, ví thật) nằm ngoài phạm vi MVP.
 
 ---
 
@@ -1034,7 +1114,7 @@ Tài liệu đủ để thuyết trình nghiệp vụ và kiến trúc. Các tí
 | Category thuộc ai? | Thuộc shop (`categories.shop_id`); lọc trên list SP. |
 | Split Order là gì? | Mỗi shop một Order; Saga và payment riêng. |
 | Ai duyệt shop? | Platform Admin qua `shop-service`. |
-| Notification lỗi mất đơn? | Không — event sau transaction. |
+| Notification lỗi mất đơn? | Không rollback Order — event sau commit; MQ fail có thể mất mail (Outbox ở mục 5.7). |
 | Storefront điều hướng shop thế nào? | `/shops/{shopId}` — không phụ thuộc tên/slug. |
 | Frontend có gọi thẳng product-service? | **Không** — chỉ `/api` qua Gateway; xem mục 5.6. |
 | State phía client quản lý thế nào? | React Context (Auth, Cart, Dialog); không Redux. |

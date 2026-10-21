@@ -20,6 +20,7 @@ public final class ErrorConstant {
     // --- Validation / generic ---
     public static final String VALIDATION_ERROR = "VALIDATION_ERROR";
     public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
+    public static final String NOT_FOUND = "NOT_FOUND";
 
     // --- Catalog ---
     public static final String CATEGORY_EXISTS = "CATEGORY_EXISTS";

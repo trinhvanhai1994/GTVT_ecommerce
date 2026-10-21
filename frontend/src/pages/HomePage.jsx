@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { Empty, ErrorBanner, Loading } from "../components/Feedback";
 
 export default function HomePage() {
+  const { isSeller, isPlatformAdmin, isAuthenticated } = useAuth();
   const [shops, setShops] = useState([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,13 @@ export default function HomePage() {
     load();
   }, []);
 
+  if (isAuthenticated && isPlatformAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+  if (isAuthenticated && isSeller) {
+    return <Navigate to="/seller" replace />;
+  }
+
   return (
     <>
       <section className="hero-banner">
@@ -35,8 +44,17 @@ export default function HomePage() {
             <a className="btn" href="#shops">
               Xem cửa hàng
             </a>
-            <Link className="btn btn-ghost" to="/register-shop">
-              Đăng ký bán hàng
+            <Link className="btn btn-ghost" to="/login">
+              Đăng nhập khách
+            </Link>
+            <Link className="btn btn-ghost" to="/register">
+              Tạo tài khoản
+            </Link>
+            <Link className="btn btn-ghost" to="/seller/login">
+              Người bán
+            </Link>
+            <Link className="btn btn-ghost" to="/admin/login">
+              Quản trị sàn
             </Link>
           </div>
         </div>

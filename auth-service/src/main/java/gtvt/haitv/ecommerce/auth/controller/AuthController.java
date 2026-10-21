@@ -1,5 +1,6 @@
 package gtvt.haitv.ecommerce.auth.controller;
 
+import gtvt.haitv.ecommerce.auth.dto.ChangePasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.ForgotPasswordRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginRequest;
 import gtvt.haitv.ecommerce.auth.dto.LoginResponse;
@@ -54,5 +55,11 @@ public class AuthController {
     @GetMapping("/profile")
     public ApiResponse<UserResponse> profile() {
         return ApiResponse.ok(authService.profile(SecurityUtils.currentUserId()));
+    }
+
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(SecurityUtils.currentUserId(), request);
+        return ApiResponse.ok("Password updated", null);
     }
 }

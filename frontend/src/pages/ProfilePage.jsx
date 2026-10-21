@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import api from "../services/api";
 import { ErrorBanner, Loading } from "../components/Feedback";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isSeller, isPlatformAdmin } = useAuth();
+  if (isPlatformAdmin) return <Navigate to="/admin" replace />;
+  if (isSeller) return <Navigate to="/seller/settings" replace />;
   const [profile, setProfile] = useState(user);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);

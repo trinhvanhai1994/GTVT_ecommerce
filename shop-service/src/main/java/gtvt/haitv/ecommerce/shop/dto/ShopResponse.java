@@ -15,6 +15,7 @@ public class ShopResponse {
     private String name;
     private String description;
     private String logoUrl;
+    private String contactEmail;
     private String status;
     private String rejectReason;
 
@@ -26,6 +27,7 @@ public class ShopResponse {
         r.name = s.getName();
         r.description = s.getDescription();
         r.logoUrl = s.getLogoUrl();
+        r.contactEmail = s.getContactEmail();
         r.status = s.getStatus();
         r.rejectReason = s.getRejectReason();
         return r;

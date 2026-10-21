@@ -1,6 +1,8 @@
 package gtvt.haitv.ecommerce.auth.controller;
 
+import gtvt.haitv.ecommerce.auth.dto.ShopApprovedProvisionRequest;
 import gtvt.haitv.ecommerce.auth.dto.UserResponse;
+import jakarta.validation.Valid;
 import gtvt.haitv.ecommerce.auth.service.AuthService;
 import gtvt.haitv.ecommerce.common.api.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,9 +30,21 @@ public class InternalUserController {
         return ApiResponse.ok(authService.getUserResponseByEmail(email));
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<UserResponse> byId(@PathVariable("id") Long id) {
+        return ApiResponse.ok(authService.profile(id));
+    }
+
     @PostMapping("/{id}/role")
     public ApiResponse<Void> setRole(@PathVariable("id") Long id, @RequestBody Map<String, String> body) {
         authService.setRole(id, body.get("role"));
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/{id}/shop-approved")
+    public ApiResponse<Void> shopApproved(
+            @PathVariable("id") Long id, @Valid @RequestBody ShopApprovedProvisionRequest request) {
+        authService.provisionShopApproved(id, request);
         return ApiResponse.ok(null);
     }
 }

@@ -34,11 +34,6 @@ public class OrderController {
         return ApiResponse.ok("Created", orderService.checkout(user.getUserId(), user.getEmail(), request));
     }
 
-    @GetMapping("/seller")
-    public ApiResponse<List<OrderResponse>> sellerOrders(@org.springframework.web.bind.annotation.RequestParam("shopId") Long shopId) {
-        return ApiResponse.ok(orderService.sellerOrders(shopId));
-    }
-
     @GetMapping
     public ApiResponse<List<OrderResponse>> list() {
         return ApiResponse.ok(orderService.myOrders(SecurityUtils.currentUserId()));

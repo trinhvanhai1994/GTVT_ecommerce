@@ -1,18 +1,28 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { homeForAuthenticatedUser } from "../utils/authRedirect.js";
 import { ErrorBanner } from "../components/Feedback";
 import api from "../services/api";
 import { clearPendingCart, readPendingCart } from "../utils/pendingCart";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isPlatformAdmin, isSeller, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  if (isAuthenticated) {
+    const dest = homeForAuthenticatedUser({
+      isPlatformAdmin,
+      isSeller,
+      mustChangePassword: user?.mustChangePassword
+    });
+    return <Navigate to={dest} replace />;
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -22,12 +32,21 @@ export default function LoginPage() {
       const user = await login(email, password);
       const role = String(user.role || "").toUpperCase();
       if (role === "ADMIN" || role === "PLATFORM_ADMIN") {
-        clearPendingCart();
-        navigate(location.state?.from?.startsWith("/admin") ? location.state.from : "/admin", { replace: true });
+        setError({ message: "Tài khoản quản trị sàn — vui lòng đăng nhập tại cổng Admin." });
         return;
       }
-      if (role === "SELLER" && (location.state?.from || "").startsWith("/seller")) {
-        navigate("/seller", { replace: true });
+      if (role === "SELLER") {
+        clearPendingCart();
+        if (user.mustChangePassword) {
+          navigate("/change-password", { replace: true });
+          return;
+        }
+        const from = location.state?.from || "";
+        if (from.startsWith("/register-shop")) {
+          navigate("/register-shop", { replace: true });
+          return;
+        }
+        navigate(from.startsWith("/seller") ? from : "/seller", { replace: true });
         return;
       }
       const pending = readPendingCart();
@@ -59,7 +78,7 @@ export default function LoginPage() {
         <p className="muted">Quên mật khẩu? Dùng liên kết bên dưới để nhận email đặt lại.</p>
       </div>
       <form className="form-card" onSubmit={onSubmit}>
-        <h2>Đăng nhập</h2>
+        <h2>Đăng nhập khách hàng</h2>
         <ErrorBanner error={error} />
         {location.state?.registeredOk && (
           <div className="banner ok">
@@ -98,6 +117,14 @@ export default function LoginPage() {
         <p className="auth-links">
           Chưa có tài khoản? <Link to="/register" state={location.state}>Tạo tài khoản miễn phí</Link>
         </p>
+        <p className="auth-links muted">
+          Người bán: <Link to="/seller/login">/seller/login</Link> · Quản trị: <Link to="/admin/login">/admin/login</Link>
+        </p>
+        {error?.message?.includes("quản trị") && (
+          <p className="auth-links">
+            <Link to="/admin/login">→ Cổng quản trị sàn</Link>
+          </p>
+        )}
       </form>
     </section>
   );

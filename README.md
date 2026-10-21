@@ -14,7 +14,7 @@ Deploy: `docs/12-deployment.md`.
 3. **Mỗi miền một service + một DB (8 logical DB).** Auth không đọc `order_db`; Order không ghi `product_db`. Giao tiếp REST (OpenFeign) hoặc event, không share bảng.
 4. **Checkout = split + Saga.** Order nhóm giỏ theo `shopId`, tạo **N Order**; mỗi Order: kiểm/giữ kho → mock payment → trừ kho / xóa dòng giỏ tương ứng. Thất bại thì nhả kho cho đơn đó.
 5. **Email không nằm trong giao dịch đặt hàng.** Order publish event lên RabbitMQ; Notification consume rồi ghi log.
-6. **Vai trò:** `CUSTOMER` mua hàng; `SELLER` quản lý shop đã duyệt (Kênh người bán); `PLATFORM_ADMIN` duyệt/khóa shop và giám sát sàn.
+6. **Vai trò & ba cổng đăng nhập:** `CUSTOMER` → `/login` (storefront cam); `SELLER` → `/seller/login` + **Kênh người bán** `/seller` (teal, không giỏ); `PLATFORM_ADMIN` → **`/admin/login`** + `/admin` (xanh). Home guest có nút điều hướng từng cổng. Duyệt shop → email `contactEmail` + mật khẩu tạm.
 7. **Eureka** + **Ops Console `:5199`** + Spring Boot Admin `:8088`.
 
 ### Luồng Storefront (tóm tắt)

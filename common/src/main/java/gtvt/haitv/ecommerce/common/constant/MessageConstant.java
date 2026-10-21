@@ -20,6 +20,7 @@ public final class MessageConstant {
     // --- Validation / generic ---
     public static final String VALIDATION_FAILED = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
     public static final String INTERNAL_ERROR = "Hệ thống đang gặp sự cố. Vui lòng thử lại sau.";
+    public static final String NOT_FOUND = "Không tìm thấy tài nguyên.";
     public static final String QUANTITY_MUST_BE_POSITIVE = "Số lượng phải lớn hơn 0.";
     public static final String INVALID_STATUS = "Trạng thái không hợp lệ.";
 

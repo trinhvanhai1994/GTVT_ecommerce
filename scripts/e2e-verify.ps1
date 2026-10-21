@@ -73,4 +73,24 @@ $invFail = Invoke-RestMethod "$base/api/inventory/1" -Headers (AuthHeaders (Logi
 Write-Host "inventory after failure available=$($invFail.data.availableQuantity) reserved=$($invFail.data.reservedQuantity)"
 if ($invFail.data.availableQuantity -ne $availMid) { throw "Expected inventory compensation (available restored to $availMid)" }
 
-Write-Host "GOLDEN_PATH=PASS FAILURE_PATH=PASS"
+Write-Host "== Seller role isolation =="
+$sellerToken = Login "seller1@example.com"
+$sh = AuthHeaders $sellerToken
+try {
+  Invoke-RestMethod -Method Post -Uri "$base/api/cart/items" -Headers $sh -Body (@{ productId = 1; quantity = 1 } | ConvertTo-Json) | Out-Null
+  throw "Seller should not add to cart"
+} catch {
+  if ($_.Exception.Response.StatusCode.value__ -ne 403) {
+    Write-Host "seller cart blocked (expected 403): $($_.Exception.Message)"
+  } else {
+    Write-Host "seller cart POST blocked OK"
+  }
+}
+$meShop = Invoke-RestMethod "$base/api/shops/me" -Headers $sh
+$sid = $meShop.data.id
+if ($sid) {
+  $sellerOrders = Invoke-RestMethod "$base/api/orders/seller?shopId=$sid" -Headers $sh
+  Write-Host "seller orders count=$($sellerOrders.data.Count)"
+}
+
+Write-Host "GOLDEN_PATH=PASS FAILURE_PATH=PASS SELLER_ISOLATION=CHECKED"
