@@ -1,18 +1,34 @@
 # GTVT E-Commerce
 
-Cửa hàng trực tuyến (Spring Boot 3 + Spring Cloud + React). Khách chỉ nói chuyện với **một cửa**: API Gateway `:8080`. Các microservice phía sau tự chia việc — mỗi service một database, Order điều phối checkout, Notification nhận sự kiện qua RabbitMQ.
+**Marketplace** nhiều gian hàng (Spring Boot 3 + Spring Cloud + React). Khách vào **Home → chọn shop → mua trong shop đó**; giỏ group theo shop; checkout tạo **N đơn** (một Order / shop), mỗi đơn một vòng Saga. Mọi client chỉ gọi **một cửa**: API Gateway `:8080`.
 
-Chi tiết kỹ thuật: `docs/06-architecture.md`.  
-Luồng chạy Spring Cloud + map config (SA): `docs/15-spring-cloud-luong-chay-va-config.md`.  
+Chi tiết nghiệp vụ / SA–BA: `BAO-CAO-DO-AN.md`.  
+Kiến trúc kỹ thuật: `docs/06-architecture.md`.  
+Luồng Spring Cloud + config: `docs/15-spring-cloud-luong-chay-va-config.md`.  
 Deploy: `docs/12-deployment.md`.
 
 ## Hệ thống hoạt động như thế nào
 
-1. **Browser không gọi từng service.** React (`:5173`) chỉ gọi Gateway. Gateway route `/api/auth`, `/api/products`, `/api/cart`, `/api/orders`, …
-2. **Mỗi miền một service + một DB.** Auth không đọc `order_db`; Order không ghi `product_db`. Giao tiếp bằng REST (OpenFeign) hoặc event, không share bảng.
-3. **Checkout là Saga do Order cầm.** Order lần lượt: lấy giỏ → kiểm/giữ kho → thanh toán mock. Thành công thì trừ kho + xóa giỏ; thất bại thì nhả kho.
-4. **Email không nằm trong giao dịch đặt hàng.** Order publish event lên RabbitMQ; Notification consume rồi ghi log.
-5. **Eureka** để service đăng ký. **Ops Console `:5199`** để xem status/log và deploy/restart service. Spring Boot Admin `:8088`.
+1. **Browser không gọi từng service.** React (`:5173`) chỉ gọi Gateway: `/api/auth`, `/api/shops`, `/api/products`, `/api/cart`, `/api/orders`, …
+2. **Shop là bounded context riêng.** `shop-service` + `shop_db` là nguồn sự thật gian hàng (đăng ký, duyệt, list Home). Catalog (`product-service`) và giỏ/đơn chỉ giữ **`shopId` logic** — không FK sang `shop_db`.
+3. **Mỗi miền một service + một DB (8 logical DB).** Auth không đọc `order_db`; Order không ghi `product_db`. Giao tiếp REST (OpenFeign) hoặc event, không share bảng.
+4. **Checkout = split + Saga.** Order nhóm giỏ theo `shopId`, tạo **N Order**; mỗi Order: kiểm/giữ kho → mock payment → trừ kho / xóa dòng giỏ tương ứng. Thất bại thì nhả kho cho đơn đó.
+5. **Email không nằm trong giao dịch đặt hàng.** Order publish event lên RabbitMQ; Notification consume rồi ghi log.
+6. **Vai trò:** `CUSTOMER` mua hàng; `SELLER` quản lý shop đã duyệt (Kênh người bán); `PLATFORM_ADMIN` duyệt/khóa shop và giám sát sàn.
+7. **Eureka** + **Ops Console `:5199`** + Spring Boot Admin `:8088`.
+
+### Luồng Storefront (tóm tắt)
+
+| Bước | Route UI | Ý nghĩa |
+|------|----------|---------|
+| Home | `/` | Danh sách shop `APPROVED` |
+| Vào shop | `/shops/:shopId` | Catalog SP trong shop (lọc category tùy chọn) |
+| PDP | `/shops/:shopId/products/:id` | Chi tiết SP → thêm giỏ |
+| Giỏ | `/cart` | Group theo shop |
+| Checkout | `/checkout` | `POST /api/orders` → **N đơn** (1 / shop) |
+| Mở shop | `/register-shop` | Hồ sơ shop → `PENDING` |
+| Seller | `/seller` | Category / SP / đơn **của shop mình** |
+| Admin sàn | `/admin` | Duyệt / từ chối / khóa shop |
 
 ## Sơ đồ tổng quan
 
@@ -32,10 +48,11 @@ flowchart TB
 
   subgraph Services["Microservices"]
     AUTH["Auth :8081 - JWT"]
-    PROD["Product :8082 - catalog"]
-    CART["Cart :8083 - cart"]
+    SHOP["Shop :8089 - marketplace"]
+    PROD["Product :8082 - catalog per shopId"]
+    CART["Cart :8083 - cart + shopId"]
     INV["Inventory :8084 - stock"]
-    ORD["Order :8085 - checkout"]
+    ORD["Order :8085 - split + Saga"]
     PAY["Payment :8086 - mock"]
     NOTI["Notification :8087 - email"]
   end
@@ -43,7 +60,7 @@ flowchart TB
   subgraph Infra["Infrastructure"]
     EU["Eureka :8761"]
     MQ["RabbitMQ :5672"]
-    PG[("PostgreSQL - 7 logical DB")]
+    PG[("PostgreSQL - 8 logical DB")]
     ADM["Spring Admin :8088"]
     OPS["Ops Console :5199"]
   end
@@ -51,6 +68,7 @@ flowchart TB
   KH --> FE
   FE -->|"HTTP + JWT"| GW
   GW --> AUTH
+  GW --> SHOP
   GW --> PROD
   GW --> CART
   GW --> INV
@@ -64,6 +82,7 @@ flowchart TB
   MQ --> NOTI
 
   AUTH -.-> EU
+  SHOP -.-> EU
   PROD -.-> EU
   CART -.-> EU
   INV -.-> EU
@@ -73,6 +92,7 @@ flowchart TB
   GW -.-> EU
 
   AUTH --> PG
+  SHOP --> PG
   PROD --> PG
   CART --> PG
   INV --> PG
@@ -104,58 +124,58 @@ sequenceDiagram
   FE-->>U: save JWT, enter app
 ```
 
-Mọi API sau đó gửi `Authorization: Bearer <JWT>`. Role `CUSTOMER` mua hàng; `ADMIN` quản lý catalog / kho / đơn.
+Mọi API sau đó gửi `Authorization: Bearer <JWT>`. Role `CUSTOMER` mua hàng; `SELLER` quản lý shop; `PLATFORM_ADMIN` duyệt shop trên `/admin`.
 
-### 2. Xem sản phẩm và thêm giỏ
+### 2. Chọn shop, xem SP và thêm giỏ
 
 ```mermaid
 sequenceDiagram
   actor U as Customer
   participant FE as Frontend
   participant GW as Gateway
+  participant SHOP as Shop
   participant PROD as Product
   participant CART as Cart
-  U->>FE: browse catalog / detail
-  FE->>GW: GET /api/products
-  GW->>PROD: catalog
+  U->>FE: Home — chọn shop
+  FE->>GW: GET /api/shops?status=APPROVED
+  GW->>SHOP: list shops
+  SHOP-->>FE: shop cards
+  U->>FE: Vào /shops/:shopId
+  FE->>GW: GET /api/products?shopId=
+  GW->>PROD: catalog trong shop
   PROD-->>FE: product list
   U->>FE: Add to cart
-  FE->>GW: POST /api/cart
-  GW->>CART: add line
+  FE->>GW: POST /api/cart/items
+  GW->>CART: line + shopId
   CART->>PROD: validate product / price
-  CART-->>FE: updated cart
+  CART-->>FE: cart grouped by shop
 ```
 
-### 3. Checkout — hai nhánh
+### 3. Checkout — split theo shop, mỗi đơn một Saga
 
-Order Service là **orchestrator**. Payment là mock: mặc định SUCCESS; tick “Simulate payment failure” trên UI để đi nhánh thất bại.
+Order Service **orchestrator**: nhóm giỏ theo `shopId` → **N Order**; mỗi Order chạy reserve → mock payment → deduct / release. Payment mock: mặc định SUCCESS (có thể mô phỏng thất bại qua API/UI tùy phiên bản demo).
 
 ```mermaid
 flowchart TD
-  A["Customer clicks Checkout"] --> B["Gateway POST /api/orders"]
-  B --> C["Order creates PENDING from cart"]
-  C --> D{"Stock enough?"}
-  D -->|No| X["Cancel / out of stock"]
-  D -->|Yes| E["Reserve stock"]
-  E --> F["Order PAYMENT_PENDING"]
-  F --> G["Order calls Payment charge"]
-  G --> H{"Payment result"}
-  H -->|SUCCESS| I["Deduct stock"]
-  I --> J["CONFIRMED + clear cart"]
-  J --> K["Publish PAYMENT_SUCCESS / ORDER_CONFIRMED"]
-  K --> L["Notification mock email"]
-  H -->|FAILED| M["Release reserved stock"]
-  M --> N["Order PAYMENT_FAILED"]
-  N --> O["Publish PAYMENT_FAILED"]
-  O --> L
+  A["Customer Checkout"] --> B["POST /api/orders"]
+  B --> C["Split cart by shopId"]
+  C --> D["For each shop: create Order PENDING"]
+  D --> E{"Stock enough?"}
+  E -->|No| X["Fail this shop order"]
+  E -->|Yes| F["Reserve stock"]
+  F --> G["PAYMENT_PENDING + charge mock"]
+  G --> H{"Payment"}
+  H -->|OK| I["Deduct + CONFIRMED + clear cart lines"]
+  I --> J["Event → Notification"]
+  H -->|Fail| K["Release stock + PAYMENT_FAILED"]
+  K --> J
 ```
 
 | | Golden Path | Failure Path |
 |---|---|---|
-| UI | Checkout, **không** tick fail | Tick **Simulate payment failure** |
-| Đơn | `CONFIRMED` | `PAYMENT_FAILED` |
-| Kho | `available` giảm (deduct) | `available` trở lại (release) |
-| Mail | log success | log payment failed |
+| Nhiều shop trong giỏ | N đơn `CONFIRMED` (độc lập) | Một shop fail không rollback đơn shop khác đã commit |
+| Kho | `available` giảm theo từng đơn | Release theo đơn thất bại |
+| Mail | log theo event từng Order | log payment failed |
 
 Notification **không rollback** đơn: event gửi sau khi Order đã commit.
 
@@ -163,19 +183,20 @@ Notification **không rollback** đơn: event gửi sau khi Order đã commit.
 
 | Service | Port | Database | Việc chính |
 |---------|------|----------|------------|
-| postgres | 5432 | 7 logical DB | Dữ liệu (volume `postgres-data`) |
+| postgres | 5432 | 8 logical DB | Dữ liệu (volume `postgres-data`) |
 | rabbitmq | 5672 / 15672 | — | Event Order → Notification |
 | eureka-server | 8761 | — | Service discovery |
 | admin-server | 8088 | — | Spring Boot Admin |
 | gateway | 8080 | — | Entry point, CORS, route `/api/**` |
 | auth-service | 8081 | auth_db | Login, JWT, user/role |
-| product-service | 8082 | product_db | Catalog |
-| cart-service | 8083 | cart_db | Giỏ theo user |
+| shop-service | 8089 (host **8091**) | shop_db | Đăng ký / duyệt shop, list Home |
+| product-service | 8082 | product_db | Category + SP theo `shopId` |
+| cart-service | 8083 | cart_db | Giỏ theo user, item có `shopId` |
 | inventory-service | 8084 | inventory_db | Check / reserve / deduct / release |
-| order-service | 8085 | order_db | Tạo đơn, cầm Saga |
+| order-service | 8085 | order_db | Split đơn theo shop, Saga |
 | payment-service | 8086 | payment_db | Charge mock SUCCESS/FAILED |
 | notification-service | 8087 | notification_db | Consume RabbitMQ |
-| frontend | 5173 | — | Storefront (nginx → Gateway `/api`) |
+| frontend | 5173 | — | Marketplace UI (nginx → Gateway `/api`) |
 | ops-control-plane | 8099 | — | Ops API (status / logs / deploy jobs) |
 | ops-console | 5199 | — | Ops UI quản lý stack |
 
@@ -240,9 +261,18 @@ docker compose up -d --build
 | Eureka | http://localhost:8761 | — |
 | RabbitMQ UI | http://localhost:15672 | ecommerce / ecommerce |
 | Postgres | localhost:5432 | postgres / 123456 |
-| Swagger (từng service) | http://localhost:8081/swagger-ui.html … `:8087` | — |
+| Swagger (từng service) | `:8081` … `:8087`, shop `:8091` | — |
 
-Admin UI storefront: admin@example.com / Password123. User phụ: customer2@example.com / Password123.
+**Tài khoản demo**
+
+| Vai trò | Email | Mật khẩu | Ghi chú |
+|---------|-------|----------|---------|
+| Customer | customer@example.com | Password123 | Mua hàng, giỏ, checkout |
+| Customer phụ | customer2@example.com | Password123 | — |
+| Platform Admin | admin@example.com | Password123 | `/admin` — duyệt shop |
+| Seller (10 shop seed) | seller1@example.com … seller10@example.com | Password123 | `/seller` — mỗi user một shop `APPROVED` trên Home |
+
+Seeder tạo 10 shop (Tech Haven, Audio Lab, …). Shop mới: đăng nhập → `/register-shop` → chờ admin duyệt.
 
 ### 3. Lệnh hàng ngày
 
@@ -280,5 +310,6 @@ Chi tiết kỹ thuật: `docs/12-deployment.md`. Demo checkout: `docs/13-demo.m
 | Ops deploy “Another job is running” | Đợi job xong hoặc xóa lock `scripts/.ops-deploy.lock` nếu process chết |
 | Log `localhost:8088` Connection refused | Image service cũ — rebuild để Admin client trỏ `http://admin:8088` |
 | Gateway 401 | Login lại, header `Authorization: Bearer` |
-| Catalog trống | Đợi seeder product; hoặc `docker compose down -v` rồi deploy lại |
-| Inventory not found | Admin PUT `/api/inventory/{productId}` |
+| Home không có shop | Đợi `shop-service` seed (cần user seller1…10 trong auth); hoặc `docker compose down -v` rồi deploy lại |
+| Catalog trống trong shop | Đợi seeder product theo `shopId`; hoặc Seller thêm SP trên `/seller` |
+| Inventory not found | Seller / admin cập nhật tồn qua API inventory |
