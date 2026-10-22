@@ -1,173 +1,161 @@
-# Chương 6 — Kiến trúc hệ thống
+# 5. Kiến trúc Microservices
 
-## 6.1 Bài toán kiến trúc
+## 5.1 Lựa chọn
 
-Hệ thống e-commerce có nhiều bounded context (identity, catalog, cart, inventory, order, payment, notification). Cần chọn kiến trúc đủ rõ để bảo vệ đồ án microservices, nhưng đủ đơn giản để hoàn thành.
+| | Modular Monolith | Microservices (chọn) |
+|--|------------------|----------------------|
+| Deploy | Một ứng dụng | Nhiều service |
+| Database | Thường một DB | Database per service |
+| Shop vs Catalog | Dễ dính chặt | Tách `shop-service` / `product-service` |
+| Phù hợp Spring Cloud | Khó triển khai | Gateway, Eureka, MQ |
 
-## 6.2 Phương án xem xét
+## 5.2 Vì sao chọn Microservices + tách shop-service
 
-### Phương án A — Modular Monolith
+1. Đề tài Spring Boot + Spring Cloud.
+2. **Vòng đời shop** (đăng ký, duyệt, khóa) khác **catalog** (category/SP) → Bounded context riêng.
+3. Checkout cần sync Saga + async Notification.
+4. Dễ bảo vệ: ownership theo `shopId`, không FK xuyên DB.
+5. Hướng mở rộng: scale đọc list shop / catalog độc lập.
 
-Một ứng dụng Spring Boot, nhiều module, một database.
+## 5.3 Khái niệm áp dụng
 
-- Ưu: đơn giản, transaction mạnh, dễ deploy.
-- Nhược: không đáp ứng yêu cầu đồ án “microservices + Spring Cloud”; khó demo discovery, gateway, messaging tách service.
+| Thuật ngữ | Trong đồ án |
+|-----------|-------------|
+| Bounded context | Auth, Shop, Product, Cart, Inventory, Order, Payment, Notification |
+| API Gateway | `api-gateway` |
+| Service Discovery | `eureka-server` |
+| Database per service | Tám Logical database nghiệp vụ (+ infra) |
+| Saga | Orchestration tại `order-service` (per Order / shop) |
+| Eventual consistency | Notification |
 
-### Phương án B — Microservices (chọn)
+## 5.4 Ưu / nhược và cách giảm phức tạp
 
-Nhiều service độc lập, database per service, API Gateway, Eureka, RabbitMQ.
+**Ưu:** ranh giới shop rõ; duyệt shop không làm phình product-service; lỗi notification không phá Order.
 
-- Ưu: đúng yêu cầu đồ án; ranh giới nghiệp vụ rõ; demo sync + async; scale theo service.
-- Nhược: phức tạp hơn; cần Saga thay vì 2PC.
-- Kiểm soát độ phức tạp: không service mesh, không Kafka, không payment gateway thật, không distributed tracing bắt buộc.
+**Nhược:** thêm service/DB; validate shop APPROVED khi đăng SP cần quy ước sync (gọi shop-service hoặc kiểm tra status trước khi ACTIVE).
 
-**Quyết định: Microservices.** Xem ADR-001.
+**Giảm phức tạp MVP:** một PostgreSQL host nhiều Logical database; Mock payment; không hoa hồng / ví seller.
 
-## 6.3 Lý do chọn Microservices
+## 5.5 Công nghệ
 
-1. Đề bài yêu cầu Spring Boot + Spring Cloud.
-2. Các miền có vòng đời và dữ liệu khác nhau (catalog vs order vs payment).
-3. Golden Path cần giao tiếp sync (Order ↔ Inventory ↔ Payment) và async (Order → RabbitMQ → Notification).
-4. Database per service tránh FK xuyên service và làm rõ ownership dữ liệu.
+| Tầng | Công nghệ |
+|------|-----------|
+| Backend | Java 21, Spring Boot 3, Spring Cloud, Spring Security, JPA |
+| Gateway / Discovery | Spring Cloud Gateway, Eureka |
+| DB | PostgreSQL — Logical database per service |
+| Message | RabbitMQ |
+| Frontend | React 18, Vite, React Router v6, Axios |
 
-## 6.4 High-level Architecture
+Storefront bổ sung: **React Context** (Auth, Cart, Dialog); **Axios interceptors** (JWT, 401, map message); dev server `:5173` proxy `/api` → Gateway (mục 5.6).
 
-```
-                    +----------------+
-                    |    FRONTEND    |
-                    |     React      |
-                    +-------+--------+
-                            |
-                            v
-                    +----------------+
-                    |  API GATEWAY   |
-                    +-------+--------+
-                            |
-      +----------+----------+----------+----------+
-      |          |          |          |          |
-      v          v          v          v          v
-  AUTH      PRODUCT      CART     INVENTORY    ORDER
- SERVICE    SERVICE    SERVICE    SERVICE     SERVICE
-                                              |     |
-                                              v     v
-                                         PAYMENT  RabbitMQ
-                                         SERVICE     |
-                                                     v
-                                               NOTIFICATION
-                                                  SERVICE
+## 5.6 Thiết kế tầng giao diện (React Storefront)
 
-Infrastructure: Eureka, PostgreSQL (logical DBs), RabbitMQ, Docker
-```
+### 5.6.1 Vai trò trong kiến trúc
 
-Diagram nguồn: `docs/diagrams/architecture.mmd`, `docs/diagrams/system-context.mmd`, `docs/diagrams/deployment.mmd`.
+Storefront là **SPA** — một bundle React, điều hướng phía client. Ứng dụng **chỉ biết Edge**: mọi nghiệp vụ qua `services/api.js` với `baseURL: "/api"`. Trong môi trường dev, Vite proxy tới `http://localhost:8080` (Gateway); production MVP giả định reverse proxy cùng origin — **không** gọi trực tiếp port `8081`–`8089`.
 
-## 6.5 Bounded Context → Service
+### 5.6.2 Cấu trúc mã nguồn (`frontend/src/`)
 
-| Bounded Context | Service | Database |
-|-----------------|---------|----------|
-| Identity & Access | auth-service | auth_db |
-| Product Catalog | product-service | product_db |
-| Shopping Cart | cart-service | cart_db |
-| Inventory | inventory-service | inventory_db |
-| Order Management | order-service | order_db |
-| Payment | payment-service | payment_db |
-| Notification | notification-service | notification_db |
-| Edge | gateway | — |
-| Discovery | eureka-server | — |
+| Thư mục | Trách nhiệm |
+|---------|-------------|
+| `pages/` | Màn hình gắn route: Home, Shop, Cart, Checkout, Seller, Admin, Auth… |
+| `components/` | `Layout` (header/nav), `ProtectedRoute`, `ProductCard`, `OrderTimeline`, `Feedback` |
+| `context/` | `AuthContext` (JWT, role), `CartContext` (giỏ + badge count), `DialogContext` (confirm/toast) |
+| `services/` | `api.js` — HTTP client duy nhất |
+| `constants/` | Role, status, timeout, `MessageConstant` / `resolveUserMessage` |
+| `utils/` | `catalog.js` (VND, nhãn trạng thái), `pendingCart`, `notifyRead` |
 
-Không service nào query database của service khác. Cross-service chỉ dùng ID (`userId`, `productId`, `orderId`).
-
-## 6.6 API Gateway
-
-- Entry point duy nhất cho frontend: `/api/**`.
-- Routing, CORS, (Phase 2) JWT filter nếu phù hợp.
-- Internal inventory API không expose public trừ khi cần demo.
-
-Routes:
-
-| Path | Service |
-|------|---------|
-| `/api/auth/**` | AUTH-SERVICE |
-| `/api/products/**` | PRODUCT-SERVICE |
-| `/api/cart/**` | CART-SERVICE |
-| `/api/inventory/**` | INVENTORY-SERVICE (admin/read nếu có) |
-| `/api/orders/**` | ORDER-SERVICE |
-| `/api/payments/**` | PAYMENT-SERVICE |
-| `/api/admin/**` | ORDER-SERVICE / AUTH-SERVICE / PRODUCT-SERVICE tùy resource |
-
-Internal:
-
-- `/internal/inventory/check|reserve|release|deduct` — chỉ service-to-service.
-
-## 6.7 Eureka
-
-Mọi business service đăng ký:
-
-AUTH-SERVICE, PRODUCT-SERVICE, CART-SERVICE, INVENTORY-SERVICE, ORDER-SERVICE, PAYMENT-SERVICE, NOTIFICATION-SERVICE.
-
-Gateway resolve service bằng discovery.
-
-## 6.8 Communication
-
-**Synchronous (REST / OpenFeign):**
-
-- Order → Inventory (check, reserve, release, deduct)
-- Order → Payment (charge)
-- Cart → Product (optional: validate product tồn tại / giá hiện tại khi add)
-- Frontend → Gateway → Service
-
-**Asynchronous (RabbitMQ):**
-
-- Order (và/hoặc Payment) publish domain events
-- Notification consume
-
-Events: `ORDER_CREATED`, `ORDER_CONFIRMED`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`, `ORDER_SHIPPED`, `ORDER_DELIVERED`.
-
-## 6.9 Saga (orchestration đơn giản)
-
-Không dùng distributed transaction.
-
-```
-Create Order
-  → Check Inventory
-  → Reserve Inventory
-  → Payment
-      ├─ SUCCESS → Confirm Order → Deduct stock
-      └─ FAILED  → Release Inventory → Order PAYMENT_FAILED
+```mermaid
+flowchart TB
+  subgraph ui [Presentation]
+    Pages[pages]
+    Comp[components]
+  end
+  subgraph state [Client_state]
+    Auth[AuthContext]
+    Cart[CartContext]
+  end
+  Api[services_api_js]
+  GW[api_gateway_8080]
+  Pages --> Auth
+  Pages --> Cart
+  Pages --> Api
+  Comp --> Api
+  Api --> GW
 ```
 
-Orchestrator: **Order Service**.
+### 5.6.3 Xác thực và phiên
 
-Compensation: release reserved stock; đánh dấu PAYMENT_FAILED.
+- **Login / Register:** `AuthContext` lưu `accessToken` và profile user trong `localStorage`; mọi request (trừ auth public) gắn header `Authorization: Bearer …`.
+- **401:** interceptor xóa token, phát event hết phiên — tránh UI hiển thị như còn đăng nhập.
+- **Phân quyền route:** `ProtectedRoute` theo role (mục 3.5); Admin không dùng giỏ Customer.
 
-Xem ADR-007.
+### 5.6.4 Luồng dữ liệu tiêu biểu
 
-## 6.10 Security (thiết kế — implement Phase 2)
+**Checkout (FR-07):** `CheckoutPage` lấy giỏ từ `CartContext` → `POST /orders` → điều hướng `OrderDetailPage` với `state.justPlaced` và danh sách Order (N shop → N phần tử) — khớp Saga mục 1.6.
 
-- Spring Security + JWT + BCrypt.
-- Roles: CUSTOMER, ADMIN.
-- Customer không CRUD product; không xem cart/order người khác.
-- Admin quản lý product và order.
-- Secret qua environment variables.
+**Giỏ đa shop:** `CartPage` group item theo `shopId`, lazy load tên shop và thông tin SP để hiển thị; **split Order** vẫn do `order-service` khi checkout.
 
-## 6.11 Layered architecture trong mỗi service
+**Hình 5.6 — Sequence UI Checkout (rút gọn)**
 
+```mermaid
+sequenceDiagram
+  actor C as Customer
+  participant FE as Storefront
+  participant GW as api_gateway
+  participant ORD as order_service
+
+  C->>FE: Submit_checkout
+  FE->>GW: POST_api_orders
+  GW->>ORD: Checkout_Saga
+  ORD-->>GW: Danh_sach_Order
+  GW-->>FE: data_N_orders
+  FE->>C: Dieu_huong_OrderDetail
 ```
-controller → service → repository → database
-```
 
-DTO request/response. Entity không expose ra ngoài nếu không cần. Global exception handler + envelope API thống nhất.
+### 5.6.5 Xử lý lỗi và UX
 
-## 6.12 Những gì Phase 1 chưa implement
+- Lỗi API map sang câu tiếng Việt qua `resolveUserMessage`; UI **không** hiển thị mã lỗi thô cho end user.
+- `Loading`, `Empty`, `ErrorBanner`, `ErrorBoundary` — pattern thống nhất trên pages.
 
-Skeleton chỉ có application bootstrap, cấu hình, actuator. Business logic, JWT filter thật, Feign, consumer, schema JPA — thuộc Phase 2.
+### 5.6.6 Giới hạn MVP (frontend)
 
-## 6.13 Phase 2 implementation notes
+- Không SSR/SEO sâu; layout/style tập trung qua `Layout` và CSS class chung.
+- File `ProductListPage.jsx` **legacy** — không gắn route trong `App.jsx`; luồng chính luôn qua shop (BR-MV-03).
+- Admin console (`AdminLayout` + `PlatformShell`) — tổng quan GMV/doanh thu shop, duyệt gian hàng, khách hàng; catalog SP do Seller (`shopId`).
 
-- JWT được validate **tại từng service** (resource server), không bắt buộc filter ở Gateway. Gateway vẫn là entry point routing + CORS.
-- Module `common` chứa envelope API, JWT, `OrderEvent` — xem ADR-011. Không chia sẻ database.
-- OpenFeign: Order → Cart/Product/Inventory/Payment; Cart → Product. URL cấu hình `clients.*.url` (local) hoặc Eureka khi `EUREKA_ENABLED=true`.
-- RabbitMQ exchange `ecommerce.events`, queue `notification.events`, routing key `order.event`. Publish **after commit**.
-- Schema JPA `ddl-auto: update` trên PostgreSQL logical DBs.
-- Swagger UI: `http://localhost:<port>/swagger-ui.html` trên mỗi backend service (trừ Eureka/Gateway).
+## 5.7 Giới hạn MVP và định hướng triển khai production
 
+MVP chạy **môi trường dev** (Docker Compose, một instance/service). Kiến trúc nghiệp vụ (Gateway, database-per-service, Saga tại `order-service`, AMQP cho Notification) **đủ demo và bảo vệ**; **chưa production-grade** về HA, zero-downtime deploy và observability tập trung.
+
+| Hạng mục | Hiện trạng MVP | Bổ sung khi go-live (ưu tiên) |
+|----------|----------------|-------------------------------|
+| Schema DB | JPA `ddl-auto: update` | **Flyway/Liquibase** — migration có version |
+| Deploy | Script / rebuild container | **CI/CD** + **rolling update**; **readiness** tách **liveness** |
+| Saga checkout | Orchestration REST + compensate | **Idempotency-Key** trên checkout; timeout + **circuit breaker** (Feign) |
+| Event Notification | Publish Rabbit **sau commit** | **Transactional Outbox** + relay worker |
+| HA hạ tầng | Postgres / Rabbit / Eureka single node | DB/MQ managed; backup **PITR**; discovery theo orchestrator (K8s/ECS) |
+| Observability | Log + `X-Correlation-Id` | **OpenTelemetry** (trace) + **Prometheus/Grafana** (metric/SLO) |
+| Edge | JWT validate tại từng service | (Tuỳ chọn) JWT/rate limit tại Gateway |
+
+**Messaging:** giữ **RabbitMQ** cho side-effect (thông báo). Chỉ cân nhắc **Kafka** khi có nhiều consumer độc lập (audit, search, BI) cần **replay log** — ngoài phạm vi MVP Nava.
+
+### 5.7.1 Case study ngắn (thực tế → GTVT)
+
+**Case 1 — Marketplace: tách đơn theo seller (mô hình sàn đa gian hàng)**  
+Một giỏ nhiều shop → **N đơn**; mỗi đơn một chuỗi reserve → charge → confirm; shop A lỗi thanh toán **không** rollback shop B. GTVT map trực tiếp: split Order theo `shopId` + Saga tại `order-service` (BPMN-05). Khi lên prod, rủi ro thường gặp là **retry checkout** sau timeout → cần **idempotency** và reserve/release **idempotent**.
+
+**Case 2 — DB đã commit, message không tới (Transactional Outbox)**  
+Order **COMMITTED** nhưng bước gửi RabbitMQ fail (broker/network) → khách có đơn, **không** email/thông báo. GTVT dùng publish **afterCommit** — đúng hướng tách transaction, nhưng chưa Outbox → có thể **at-most-once** trên đường MQ. Chuẩn ngành: ghi event vào bảng **outbox** cùng transaction Order; worker relay sang RabbitMQ.
+
+### 5.7.2 So sánh messaging (tóm tắt)
+
+| | **RabbitMQ (đồ án)** | **Kafka** |
+|--|----------------------|-----------|
+| Vai trò | Task queue / notify | Event log, nhiều consumer, replay |
+| Phù hợp Nava | Order → Notification (một consumer) | Audit, search, analytics đa team |
+| Ghi chú vận hành | Nên kèm **Outbox** + **DLQ** | Ops phức tạp hơn; không bắt buộc cho MVP |
+
+Chi tiết kỹ thuật triển khai local: `docs/12-deployment.md`, `docs/15-spring-cloud-luong-chay-va-config.md`.
+
+---

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Build BAO-CAO-DO-AN.docx from BAO-CAO-DO-AN.md (Mermaid PNG + Pandoc + post-process)."""
+"""Build BAO-CAO-DO-AN.docx from BAO-CAO-DO-AN.md (Mermaid PNG + Pandoc + post-process).
+
+Markdown chapters for docs/: run `python3 scripts/build_docs_from_bao_cao.py` first (same source file).
+"""
 
 from __future__ import annotations
 

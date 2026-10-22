@@ -1,7 +1,11 @@
-# Chương 14 — Kết luận
+# 9. Kết luận
 
-Đồ án đã triển khai e-commerce microservices chạy được end-to-end: identity, catalog, cart, inventory, order saga, mock payment, async notification, React UI qua API Gateway.
+Đồ án xây **Nava** — marketplace nhiều gian hàng theo **Microservices** (MVP): đăng ký / duyệt shop, Home list shop, mua trong shop (list SP theo `shopId`), giỏ group shop, checkout split Order + Saga, giá VND.
 
-Hạn chế: mock payment, PostgreSQL local thay MySQL (ADR-010), Eureka opt-in, `/internal` tin tưởng network, không có service mesh.
+Tám business service (+ Gateway, Eureka): nổi bật **`shop-service`** (SoT gian hàng) và **`order-service`** (Saga Orchestrator). Database per service; `shopId` logical xuyên context.
 
-Hướng phát triển: idempotent consumers, outbox, API gateway JWT, Docker Postgres riêng, observability.
+Tài liệu đủ để thuyết trình nghiệp vụ và kiến trúc. Lộ trình go-live (migration schema, idempotent Saga, Outbox, HA DB/MQ, observability) tóm tắt tại **mục 5.7** — không đổi thiết kế bounded context hiện tại.
+
+Các tính năng sàn nâng cao (chat, livestream, tìm toàn sàn, ví thật) nằm ngoài phạm vi MVP.
+
+---

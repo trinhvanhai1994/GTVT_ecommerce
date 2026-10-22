@@ -1,33 +1,46 @@
-# Demo Marketplace MVP
+# Demo Marketplace MVP — Nava
 
-## Accounts (Password123)
+> Đồng bộ với mục 8 báo cáo. Chi tiết UI: `13-demo.md`, `bao-cao/08-kich-ban-kiem-thu-va-thuyet-minh-bao-ve.md`.
 
-| Email | Role |
-|-------|------|
-| admin@example.com | PLATFORM_ADMIN |
-| customer@example.com | CUSTOMER |
-| seller@example.com | SELLER (owner Tech Haven nếu seed) |
-| seller2@example.com | SELLER (owner Audio Lab nếu seed) |
+## Tài khoản (mật khẩu `Password123`)
 
-## Ports
+| Email | Role | Ghi chú |
+|-------|------|---------|
+| admin@example.com | PLATFORM_ADMIN | `/admin/login` → Platform Console |
+| customer@example.com | CUSTOMER | Storefront `/login` |
+| seller@example.com | SELLER | `/seller/login` — owner shop seed (vd. Tech Haven) |
+| seller2@example.com | SELLER | Owner shop seed thứ hai (vd. Audio Lab) |
 
-- Gateway `8080`, shop-service **`8089`** (admin-server giữ 8088)
+## URL
 
-## Trước khi chạy lần đầu
+| Thành phần | Địa chỉ |
+|------------|---------|
+| Storefront | http://localhost:5173 |
+| API Gateway | http://localhost:8080 |
+| Eureka | http://localhost:8761 |
+| shop-service | **8089** (admin-server giữ 8088) |
 
-1. Tạo DB: `CREATE DATABASE shop_db;`
-2. (Nếu DB cũ) chạy `scripts/migrate-product-shopid.sql`
-3. Start: Eureka → Gateway → auth, shop, product, cart, inventory, order, payment, notification → frontend
+## Ba cổng đăng nhập
 
-## Checklist demo
+| Cổng | Route | Sau login |
+|------|-------|-----------|
+| Khách | `/login` | Home `/` |
+| Người bán | `/seller/login` | `/seller` hoặc `/register-shop` |
+| Quản trị sàn | `/admin/login` | `/admin` (GMV, gian hàng, khách hàng) |
 
-1. Admin login → Admin → **Duyệt shop** (approve PENDING nếu có).
-2. Home: thấy shop APPROVED (Tech Haven, Audio Lab).
-3. Customer: vào shop → chọn category → thêm giỏ → checkout → có thể nhiều Order.
-4. Seller: login lại → Seller Center → thêm category/SP → xem đơn shop.
-5. Đăng ký shop mới: `/register-shop` → PENDING → admin approve → Home hiện shop → re-login seller.
+## Checklist demo (~10 phút)
+
+1. **Admin** — `/admin`: duyệt shop PENDING; xem **doanh thu theo gian hàng** (nếu đã có đơn).
+2. **Home** — `/`: shop `APPROVED`.
+3. **Customer** — `/shops/{shopId}` → PDP → giỏ → checkout (N shop → N Order).
+4. **Seller** — `/seller`: category, SP, tồn, đơn shop; KPI `GET /orders/seller-stats`.
+5. **Payment fail** — checkout + `simulatePaymentFailure` → `PAYMENT_FAILED`, release kho.
+6. **Đăng ký shop mới** — `/register-shop` → PENDING → admin approve → **đăng nhập lại** seller.
 
 ## Lưu ý
 
-- Sau `POST /api/shops`, role DB = SELLER nhưng JWT cũ vẫn CUSTOMER → **đăng nhập lại**.
-- Catalog toàn sàn không còn là luồng chính; mua qua `/shops/:slug`.
+- Storefront điều hướng shop bằng **`shopId`**: `/shops/{shopId}` (slug chỉ hồ sơ).
+- Sau `POST /api/shops`, JWT cũ có thể vẫn CUSTOMER → **login lại**.
+- `/admin/orders` redirect về `/admin` (không UI xử lý đơn toàn sàn).
+
+*File sinh bởi `scripts/build_docs_from_bao_cao.py`.*

@@ -1,196 +1,134 @@
-# Chương 5 — BPMN / Quy trình nghiệp vụ
+# 4. Quy trình nghiệp vụ (BPMN)
 
-Tất cả quy trình bám **Golden Path** và **Failure Path** trong `00-OVERVIEW.md` / `02-business-analysis.md`.
-
----
-
-## BPMN-01 — Registration / Login
-
-### Mục tiêu
-
-Khách hàng hoặc admin xác thực để nhận JWT.
-
-### Diagram
+## 4.1 BPMN-01 — Đăng ký / Đăng nhập
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> Open[Open Login or Register]
-  Open --> Choice{Has account?}
-  Choice -->|No| Register[Submit registration]
-  Register --> ValR{Valid and email unique?}
-  ValR -->|No| ErrR[Show validation or duplicate error]
-  ErrR --> Register
-  ValR -->|Yes| Hash[Hash password and create CUSTOMER]
-  Hash --> LoginForm[Go to Login]
-  Choice -->|Yes| Login[Submit email and password]
-  LoginForm --> Login
-  Login --> ValL{Credentials valid?}
-  ValL -->|No| ErrL[401 INVALID_CREDENTIALS]
-  ErrL --> Login
-  ValL -->|Yes| JWT[Issue JWT with role]
-  JWT --> End([Authenticated session])
+  startNode([Bat_dau]) --> hasAccount{Da_co_tai_khoan}
+  hasAccount -->|Chua| register[Nhap_email_mat_khau_ho_ten]
+  register --> valid{Hop_le_email_unique}
+  valid -->|Khong| errReg[Bao_loi]
+  errReg --> register
+  valid -->|Co| createUser[Hash_BCrypt_tao_CUSTOMER]
+  createUser --> login
+  hasAccount -->|Roi| login[Dang_nhap]
+  login --> pwdOk{Dung_mat_khau}
+  pwdOk -->|Khong| err401[HTTP_401]
+  err401 --> login
+  pwdOk -->|Co| jwt[Cap_JWT]
+  jwt --> endNode([Vao_he_thong])
 ```
 
-### Ghi chú
+**Đọc hình:** JWT mang `userId` + `role` (CUSTOMER / SELLER / PLATFORM_ADMIN).
 
-- Password không log, không trả về client.
-- Role trong token: `CUSTOMER` hoặc `ADMIN`.
+## 4.2 BPMN-02 — Đăng ký shop và duyệt (trọng tâm marketplace)
 
----
-
-## BPMN-02 — Product Management
-
-### Mục tiêu
-
-Admin quản lý category và product. Customer chỉ đọc.
+**Hình 4.1 — Đăng ký & duyệt shop**
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> Auth{JWT role?}
-  Auth -->|CUSTOMER or anonymous| Read[List / Search / Detail products]
-  Read --> EndRead([Catalog displayed])
-  Auth -->|ADMIN| Action{Action}
-  Action --> Cat[CRUD Category]
-  Action --> Prod[CRUD Product]
-  Cat --> SaveC[Persist in product_db]
-  Prod --> SaveP[Persist in product_db]
-  SaveC --> EndAdmin([Catalog updated])
-  SaveP --> EndAdmin
-  Auth -->|Missing or invalid| Deny[401 / 403]
+  startReg([Bat_dau]) --> login{Da_login}
+  login -->|Khong| goLogin[Dieu_huong_login]
+  login -->|Co| form[Nhap_ho_so_shop]
+  form --> valid{Hop_le_slug_unique}
+  valid -->|Khong| err[Bao_loi]
+  err --> form
+  valid -->|Co| create[shop_service_tao_PENDING]
+  create --> member[Tao_shop_members_OWNER]
+  member --> role[Cap_role_SELLER]
+  role --> wait[Cho_duyet]
+  wait --> admin{PLATFORM_ADMIN}
+  admin -->|Approve| ok[APPROVED_hien_Home]
+  admin -->|Reject| rej[REJECTED_kem_ly_do]
+  admin -->|Suspend| sus[SUSPENDED_an_Home]
+  ok --> cred[auth_MK_tam_email_contactEmail]
+  cred --> sellerCenter([Kenh_nguoi_ban_doi_MK])
 ```
 
----
+**Đọc hình**
 
-## BPMN-03 — Shopping Cart
+- `shop-service` tạo shop `PENDING`; chưa hiện Home; hồ sơ có `contactEmail`.
+- Approve → `APPROVED` + gọi `auth-service` (mật khẩu tạm, `mustChangePassword`) + email template tới `contactEmail` (best-effort).
+- Seller đăng nhập lần đầu → `/change-password` → `/seller` (dashboard merchant).
+- Reject / Suspend → **không** gửi email credential; Customer không thấy shop trên Home.
+
+## 4.3 BPMN-03 — Mua hàng trong shop (Home → shop → list SP)
+
+**Hình 4.2 — Hành trình mua trên Storefront**
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> Login{Customer logged in?}
-  Login -->|No| Auth[401 Unauthorized]
-  Login -->|Yes| Load[Load cart by userId]
-  Load --> Op{Operation}
-  Op --> Add[Add item]
-  Op --> Upd[Update quantity]
-  Op --> Rem[Remove item]
-  Op --> Clr[Clear cart]
-  Op --> View[View cart]
-  Add --> Valid{Product exists and qty > 0?}
-  Valid -->|No| Err[400 / 404]
-  Valid -->|Yes| Merge[Insert or increase quantity]
-  Upd --> Own{Item belongs to user?}
-  Rem --> Own
-  Own -->|No| Forbid[403 / 404]
-  Own -->|Yes| Apply[Apply change]
-  Merge --> Save[Save cart_db]
-  Apply --> Save
-  Clr --> Save
-  View --> Done([Return cart])
-  Save --> Done
+  home([Home_list_shop]) --> pickShop[Chon_shop_APPROVED_shopId]
+  pickShop --> listProd[List_SP_trong_shop]
+  listProd --> filterCat{Loc_category}
+  filterCat -->|Tuy_chon| listProd
+  filterCat -->|Chon_SP| pdp[Chi_tiet_SP]
+  pdp --> addCart{Da_login}
+  addCart -->|Khong| needLogin[HTTP_401_hoac_login]
+  addCart -->|Co| cart[(cart_db_group_shop)]
+  cart --> checkoutNode([Checkout])
 ```
 
----
+**Đọc hình:** Home không liệt kê SP thay shop. Vào shop theo `shopId` là thấy list SP; category là bộ lọc tùy chọn.
 
-## BPMN-04 — Checkout (Golden Path + Inventory + Payment)
+## 4.4 BPMN-04 — Giỏ hàng
 
-Đây là quy trình quan trọng nhất. Phải thể hiện:
-
-Customer → Cart → Order → Inventory → Payment → Order → Notification
-
-và failure path: Payment Failed → Release Inventory → Order PAYMENT_FAILED.
+Mỗi Customer một giỏ. Item lưu `shopId`. UI group theo shop.
 
 ```mermaid
 flowchart TD
-  Start([Customer clicks Checkout]) --> Cart[Load cart]
-  Cart --> Empty{Cart empty?}
-  Empty -->|Yes| StopEmpty[Reject BR-05]
-  Empty -->|No| Ship[Collect shipping and payment method]
-  Ship --> Create[Order Service creates order PENDING with item snapshots]
-  Create --> Check[Inventory: check stock]
-  Check --> Enough{Enough stock?}
-  Enough -->|No| StopStock[Reject BR-06 / BR-07]
-  Enough -->|Yes| Reserve[Inventory: reserve stock]
-  Reserve --> PendPay[Order status PAYMENT_PENDING]
-  PendPay --> Pub1[Publish ORDER_CREATED best-effort]
-  Pub1 --> Pay[Payment Service mock charge]
-  Pay --> Result{Payment result}
-  Result -->|SUCCESS| Confirm[Order CONFIRMED]
-  Confirm --> Deduct[Inventory: deduct reserved]
-  Deduct --> Clear[Clear cart]
-  Clear --> Pub2[Publish PAYMENT_SUCCESS and ORDER_CONFIRMED]
-  Pub2 --> NotifOk[Notification Service consumes]
-  NotifOk --> EndOk([Customer sees confirmed order])
-  Result -->|FAILED| Release[Inventory: release reserved]
-  Release --> FailOrd[Order PAYMENT_FAILED]
-  FailOrd --> Pub3[Publish PAYMENT_FAILED]
-  Pub3 --> NotifFail[Notification Service consumes]
-  NotifFail --> EndFail([Customer sees payment failed])
+  startCart([Them_hoac_sua_gio]) --> loggedIn{Da_login}
+  loggedIn -->|Khong| unauth[HTTP_401]
+  loggedIn -->|Co| loadCart[Lay_cart_theo_userId]
+  loadCart --> action{Thao_tac}
+  action --> addItem[Them_kem_shopId]
+  action --> updQty[Sua_SL]
+  action --> delItem[Xoa_item]
+  addItem --> prodOk{SP_thuoc_shop_APPROVED}
+  prodOk -->|Khong| badReq[HTTP_400_hoac_404]
+  prodOk -->|Co| save[(cart_db)]
+  updQty --> save
+  delItem --> save
+  save --> resp([Tra_gio_group_theo_shop])
 ```
 
-### Compensation
+## 4.5 BPMN-05 — Checkout + Saga (split theo shop)
 
-```
-Payment FAILED
-  → Release Inventory
-  → Order = PAYMENT_FAILED
-```
-
-Notification lỗi **không** rollback order (BR-12).
-
----
-
-## BPMN-05 — Payment
+**Hình 4.3 — Checkout split N Order**
 
 ```mermaid
 flowchart TD
-  Start([Payment requested]) --> Create[Create payment PENDING]
-  Create --> Method{Method}
-  Method --> COD[COD]
-  Method --> Card[MOCK_CARD]
-  Method --> Bank[MOCK_BANKING]
-  COD --> Mock[Mock processor]
-  Card --> Mock
-  Bank --> Mock
-  Mock --> Outcome{Simulated outcome}
-  Outcome -->|SUCCESS| Ok[Status SUCCESS]
-  Outcome -->|FAILED| Bad[Status FAILED]
-  Ok --> TellOk[Notify Order Service]
-  Bad --> TellBad[Notify Order Service]
-  TellOk --> EndOk([Order confirms])
-  TellBad --> EndBad([Order compensates])
+  startCo([Bam_Checkout]) --> getCart[Lay_gio]
+  getCart --> empty{Gio_rong}
+  empty -->|Co| rejectEmpty[Tu_choi_BR05]
+  empty -->|Khong| group[Group_item_theo_shopId]
+  group --> loop[Voi_moi_shop]
+  loop --> createOrd[Tao_Order_PENDING_Snapshot]
+  createOrd --> checkInv[Check_ton]
+  checkInv --> enough{Du_hang}
+  enough -->|Khong| rejectStock[Tu_choi_shop_do]
+  enough -->|Co| reserve[Reserve]
+  reserve --> charge[Mock_payment]
+  charge --> payResult{Ket_qua}
+  payResult -->|SUCCESS| confirm[CONFIRMED_Deduct]
+  confirm --> pubOk[Publish_events]
+  payResult -->|FAILED| release[Release]
+  release --> failOrd[PAYMENT_FAILED]
+  failOrd --> pubFail[Publish_PAYMENT_FAILED]
+  pubOk --> moreShop{Con_shop}
+  pubFail --> moreShop
+  moreShop -->|Co| loop
+  moreShop -->|Khong| done([Tra_danh_sach_Order])
 ```
 
-Không tích hợp cổng thanh toán thật.
+**Đọc hình**
+
+- Một request checkout có thể tạo **nhiều Order**; mỗi Order một Saga độc lập.
+- Fail một shop không bắt buộc rollback shop khác (MVP: mỗi shop xử lý riêng; báo rõ từng Order).
+- `order-service` = Saga Orchestrator; không 2PC xuyên DB.
+
+### Fulfillment (rút gọn)
+
+Seller (hoặc Platform Admin) đổi PROCESSING → SHIPPING → DELIVERED cho Order của đúng shop; có thể publish event Notification.
 
 ---
-
-## BPMN-06 — Order Fulfillment
-
-```mermaid
-flowchart TD
-  Start([Order CONFIRMED]) --> Admin[Admin opens order management]
-  Admin --> Proc[Set PROCESSING]
-  Proc --> Ship[Set SHIPPING]
-  Ship --> PubS[Publish ORDER_SHIPPED]
-  PubS --> Deliv[Set DELIVERED]
-  Deliv --> PubD[Publish ORDER_DELIVERED]
-  PubD --> Notif[Notification consumes]
-  Notif --> End([Customer tracks status])
-
-  StartCancel([Customer cancel request]) --> Can{Status PENDING or PAYMENT_PENDING?}
-  Can -->|Yes| Rel[Release stock if reserved]
-  Rel --> Canc[Set CANCELLED]
-  Can -->|No| Reject[409 ORDER_NOT_CANCELLABLE]
-```
-
----
-
-## Ánh xạ BPMN → Use Case / FR
-
-| BPMN | Use Cases | FR |
-|------|-----------|----|
-| BPMN-01 | UC-01, UC-02 | FR-01, FR-02 |
-| BPMN-02 | UC-03, UC-04, UC-11 | FR-03, FR-04, FR-05, FR-13, FR-14 |
-| BPMN-03 | UC-05 | FR-06 |
-| BPMN-04 | UC-06, UC-07, UC-08, UC-14 | FR-07, FR-08, FR-09, FR-15, FR-17 |
-| BPMN-05 | UC-08 | FR-09 |
-| BPMN-06 | UC-09, UC-10, UC-13, UC-14 | FR-10, FR-11, FR-12, FR-16, FR-17 |

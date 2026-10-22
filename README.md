@@ -2,10 +2,8 @@
 
 **Marketplace** nhiều gian hàng (Spring Boot 3 + Spring Cloud + React). Khách vào **Home → chọn shop → mua trong shop đó**; giỏ group theo shop; checkout tạo **N đơn** (một Order / shop), mỗi đơn một vòng Saga. Mọi client chỉ gọi **một cửa**: API Gateway `:8080`.
 
-Chi tiết nghiệp vụ / SA–BA: `BAO-CAO-DO-AN.md`.  
-Kiến trúc kỹ thuật: `docs/06-architecture.md`.  
-Luồng Spring Cloud + config: `docs/15-spring-cloud-luong-chay-va-config.md`.  
-Deploy: `docs/12-deployment.md`.
+Chi tiết nghiệp vụ / SA–BA: `BAO-CAO-DO-AN.md` · bộ docs nộp: [`docs/README.md`](docs/README.md).  
+Kiến trúc: `docs/06-architecture.md` · Spring Cloud: `docs/15-spring-cloud-luong-chay-va-config.md` · Deploy: `docs/12-deployment.md`.
 
 ## Hệ thống hoạt động như thế nào
 

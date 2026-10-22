@@ -14,7 +14,7 @@ theo kiến trúc Microservices với Spring Boot + Spring Cloud
 | Package | `gtvt.haitv.ecommerce` |
 | Năm | 2026 |
 
-> Báo cáo thiết kế System Analysis cho **sàn thương mại điện tử nhiều gian hàng (MVP)** — hệ thống **Nava**. Chi tiết kỹ thuật bổ sung: thư mục `docs/`.
+> Báo cáo thiết kế System Analysis cho **sàn thương mại điện tử nhiều gian hàng (MVP)** — hệ thống **Nava**. **Bộ tài liệu nộp:** [`docs/README.md`](docs/README.md) (đồng bộ: `python3 scripts/build_docs_from_bao_cao.py`; Word: `python3 scripts/build_bao_cao_docx.py`).
 
 ---
 
@@ -83,7 +83,7 @@ Hệ thống cho phép:
 
 - **Customer** xem danh sách shop trên Home, **vào một shop** (URL theo `shopId`), xem **danh sách sản phẩm** (lọc category tùy chọn), thêm giỏ (group theo shop), checkout, theo dõi / hủy đơn hợp lệ.
 - **Seller** đăng ký mở shop → chờ duyệt → quản lý danh mục / sản phẩm / tồn / đơn **của shop mình** (Kênh người bán).
-- **Platform Admin** duyệt / từ chối / khóa shop; giám sát đơn toàn sàn.
+- **Platform Admin** duyệt / từ chối / khóa shop; **tổng quan GMV và doanh thu theo gian hàng**; quản lý khách hàng (MVP — không màn hình xử lý đơn toàn sàn trên UI).
 - Thanh toán **Mock payment** theo từng Order; thông báo **bất đồng bộ** qua RabbitMQ. Giá hiển thị **VND**.
 
 **Luồng mua chính:** Home (list shop) → chọn shop → danh sách SP trong shop → chi tiết SP → giỏ → checkout.  
@@ -260,7 +260,7 @@ Livestream, ví sàn thật, affiliate, chat buyer–seller, rating đầy đủ
 |----|----------|------|---------|
 | ACTOR-01 | Customer | Chính | Người mua — vào shop rồi mới chọn hàng |
 | ACTOR-02 | Seller | Chính | Chủ shop — đăng ký, quản lý gian hàng |
-| ACTOR-03 | Platform Admin | Chính | Duyệt/khóa shop; giám sát sàn |
+| ACTOR-03 | Platform Admin | Chính | Duyệt/khóa shop; tổng quan doanh thu shop; khóa tài khoản khách |
 | ACTOR-04 | Payment System | Phụ (mock) | SUCCESS / FAILED per Order |
 | ACTOR-05 | Notification System | Phụ | Consume event |
 | ACTOR-06 | Hạ tầng | Phụ | Eureka, Gateway, PostgreSQL, RabbitMQ |
@@ -306,9 +306,10 @@ MVP: một user Owner tối đa **một** shop đang `PENDING` hoặc `APPROVED`
 | FR-A02 | Duyệt shop | `APPROVED` → hiện Home |
 | FR-A03 | Từ chối shop | `REJECTED` + `reject_reason` |
 | FR-A04 | Khóa shop | `SUSPENDED` — ẩn Home, không bán |
-| FR-A05 | Giám sát đơn toàn sàn | Xem / can thiệp status khi cần |
+| FR-A05 | Tổng quan doanh thu sàn | GMV + bảng **doanh thu theo shop** (aggregate từ `GET /admin/orders`, đơn CONFIRMED→DELIVERED) |
+| FR-A06 | Quản lý khách hàng | Khóa / mở khóa tài khoản CUSTOMER |
 
-Platform Admin **không** đăng SP hộ Seller (MVP).
+Platform Admin **không** đăng SP hộ Seller (MVP). **Không** có trang `/admin/orders` trên Storefront (API admin orders vẫn tồn tại phục vụ thống kê).
 
 ## 3.5 Ánh xạ chức năng → Storefront (Nava)
 
@@ -343,9 +344,10 @@ Storefront (`frontend/`) triển khai các FR ở mục 3.2–3.4. Mọi HTTP đ
 | FR-S09 | `/seller/orders`, `/seller/orders/:id` | `SellerOrdersPage`, `SellerOrderDetailPage` | `GET /orders/seller?shopId=`; fulfillment PATCH |
 | FR-S — | `/seller/settings` | `SellerSettingsPage` | `PUT /shops/me` |
 | FR-S02b | `/register-shop` | `RegisterShopPage` | `contactEmail` bắt buộc |
-| FR-A02–04 | `/admin`, `/admin/shops`, `/admin/shops/:shopId` | `AdminLayout` + pages | Duyệt shop; chi tiết shop — đơn/SP theo shop |
-| FR-A05 | `/admin/orders` | `AdminOrdersPage` | `PATCH /admin/orders/{id}/status`; cột Shop (snapshot) |
-| FR-A — | `/admin/customers` | `AdminCustomersPage` | Khóa/mở CUSTOMER |
+| FR-A05 | `/admin` | `AdminLayout` → `AdminOverview` | KPI GMV; bảng doanh thu theo shop; `GET /admin/orders`, `/admin/shops`, `/admin/users` |
+| FR-A02–04 | `/admin/shops`, `/admin/shops/:shopId` | `AdminShopsPage`, `AdminShopDetailPage` | Duyệt/từ chối/tạm ngưng; chi tiết — doanh thu shop + xem nhanh SP |
+| FR-A06 | `/admin/customers` | `AdminCustomersPage` | `PATCH /admin/users/{id}/status` |
+| — | `/admin/orders` | *(redirect → `/admin`)* | Legacy URL; không còn UI quản lý đơn admin |
 
 ### Quy tắc hiển thị (BR-UI)
 
@@ -361,7 +363,7 @@ Storefront (`frontend/`) triển khai các FR ở mục 3.2–3.4. Mọi HTTP đ
 | BR-UI-08 | Shop APPROVED | `/register-shop` → redirect `/seller`; onboarding trong `/seller` |
 | BR-UI-09 | Sandbox route | Sau login: ADMIN chỉ `/admin*`; SELLER chỉ `/seller*` + `/change-password`; CUSTOMER không vào `/admin*`/`/seller*` |
 | BR-UI-10 | Đồng bộ role | Sau `POST /shops` gọi `refreshProfile()`; F5 có token → `GET /auth/profile`; seller không quản lý qua PDP vitrine |
-| — | Theme | Storefront (cam) · `/admin/*` platform · merchant: `/seller/*`, `/seller/login`, `/register-shop` (SELLER) |
+| — | Theme | Storefront (cam) · `/admin/*` **Platform Console** (`PlatformShell`, sidebar tối) · merchant: `/seller/*` (`MerchantShell`) |
 | — | Shop PENDING | `RegisterShopPage` / `SellerOnboarding` — chưa sidebar CRUD đầy đủ |
 | — | Home guest | CTA: đăng nhập khách · người bán · quản trị sàn |
 
@@ -649,7 +651,7 @@ sequenceDiagram
 
 - Không SSR/SEO sâu; layout/style tập trung qua `Layout` và CSS class chung.
 - File `ProductListPage.jsx` **legacy** — không gắn route trong `App.jsx`; luồng chính luôn qua shop (BR-MV-03).
-- Admin console (`AdminLayout`) — giám sát sàn; catalog SP do Seller (`shopId`).
+- Admin console (`AdminLayout` + `PlatformShell`) — tổng quan GMV/doanh thu shop, duyệt gian hàng, khách hàng; catalog SP do Seller (`shopId`).
 
 ## 5.7 Giới hạn MVP và định hướng triển khai production
 
@@ -1067,7 +1069,7 @@ Envelope:
 | UI-05 | Seller không mua | Login seller → `/cart` | Redirect `/seller`; header không giỏ |
 | UI-06 | Đơn bán | `/seller/orders` → chi tiết | `/seller/orders/:id?shopId=` — timeline + line items |
 | UI-07 | Duyệt + email | Admin approve | Toast contactEmail; log `[MOCK EMAIL]` hoặc Brevo |
-| UI-08 | Admin shop detail | `/admin/shops/:shopId` | Đơn lọc đúng shop |
+| UI-08 | Admin shop detail | `/admin/shops/:shopId` | Doanh thu GMV shop + danh sách SP xem nhanh |
 | UI-09 | Theme | Admin vs Seller vs Home | Sidebar xanh vs teal vs storefront cam |
 | UI-10 | Ba cổng login | Home → `/login`, `/seller/login`, `/admin/login` | Đúng role sau đăng nhập |
 | UI-11 | Khóa khách | Admin tab Khách hàng → Khóa | `INACTIVE` không login |
